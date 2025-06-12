@@ -1,0 +1,94 @@
+﻿@page
+@model VinylVaultWeb.Pages.SignUpModel
+@{
+    ViewData["Title"] = "Sign Up";
+}
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
+        <h2 class="text-center mb-4">Create an Account</h2>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <form id="signUpForm" method="post">
+            <div class="mb-3">
+                <label for="fullName" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="fullName" asp-for="User.FullName" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="email" asp-for="User.Email" required>
+                @if (!string.IsNullOrEmpty(Model.EmailError))
+                {
+                    <small class="text-danger">@Model.EmailError</small>
+                }
+            </div>
+            
+            <div class="mb-3">
+                <label for="address" class="form-label">Address</label>
+                <input type="text" class="form-control" id="address" asp-for="User.Address" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <div class="input-group">
+                    <input type="password" class="form-control" id="password" asp-for="User.PasswordHash" required>
+                    <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                        <i class="bi bi-eye"></i> 
+                    </button>
+                </div>
+                <small class="text-danger d-none" id="passwordError">
+                    Password must be at least 8 characters, include upper/lowercase letters, and a special character.
+                </small>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Sign Up</button>
+        </form>
+
+        <p class="mt-3 text-center">
+            Already have an account? <a asp-page="/LogIn">Log In</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    document.getElementById("togglePassword").addEventListener("click", function () {
+        let passwordInput = document.getElementById("password");
+        let toggleIcon = this.querySelector("i");
+
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text"; 
+            toggleIcon.classList.remove("bi-eye");
+            toggleIcon.classList.add("bi-eye-slash");
+        } else {
+            passwordInput.type = "password"; 
+            toggleIcon.classList.remove("bi-eye-slash");
+            toggleIcon.classList.add("bi-eye");
+        }
+    });
+</script>
+
+<script>
+    document.getElementById("signUpForm").addEventListener("submit", function(event) {
+        let valid = true;
+        let password = document.getElementById("password").value;
+
+        let passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            document.getElementById("passwordError").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("passwordError").classList.add("d-none");
+        }
+
+        if (!valid) {
+            event.preventDefault();
+        }
+    });
+</script>

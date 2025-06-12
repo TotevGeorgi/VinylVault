@@ -1,0 +1,45 @@
+﻿@page
+@model VinylVaultWeb.Pages.ListedItemsModel
+@{
+    ViewData["Title"] = "Listed Items";
+}
+
+<h2>My Listed Vinyls</h2>
+
+@if (Model.SuccessMessage != null)
+{
+    <div class="alert alert-success">
+        @Model.SuccessMessage
+    </div>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Artist</th>
+            <th>Condition</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var vinyl in Model.Vinyls)
+        {
+            <tr>
+                <td>@vinyl.Title</td>
+                <td>@vinyl.Artist</td>
+                <td>@vinyl.Condition</td>
+                <td>@vinyl.Description</td>
+                <td>
+                    <a href="@Url.Page("/UpdateVinyl", new { id = vinyl.Id })" class="btn btn-warning btn-sm">Edit</a>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@vinyl.Id" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a href="/SellVinyl" class="btn btn-primary">Add New Vinyl</a>

@@ -1,0 +1,68 @@
+﻿@page
+@model VinylVaultWeb.Pages.ProfileModel
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Your Profile</h2>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success">@Model.SuccessMessage</div>
+    }
+
+    <form method="post" asp-page-handler="Save">
+        <div class="mb-3">
+            <label class="form-label">Email (read-only)</label>
+            <input class="form-control" value="@Model.User.Email" disabled />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="User.FullName" class="form-label">Full Name</label>
+            <input asp-for="User.FullName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="User.Address" class="form-label">Address</label>
+            <input asp-for="User.Address" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary" asp-page-handler="Save">Save Changes</button>
+    </form>
+
+    <hr class="my-4" />
+
+    <h5>Seller Status</h5>
+    @if (Model.User.Role == "Seller")
+    {
+        <p class="text-success">You are currently a <strong>Seller</strong>.</p>
+    }
+    else
+    {
+        <p>You are currently a <strong>User</strong>.</p>
+        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#sellerModal">
+            Apply for Seller Access
+        </button>
+    }
+
+    <div class="modal fade" id="sellerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="BecomeSeller">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Seller Upgrade</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Becoming a seller allows you to list and manage vinyl records on VinylVault.</p>
+                        <p>Are you sure you want to upgrade your account?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Yes, Become a Seller</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

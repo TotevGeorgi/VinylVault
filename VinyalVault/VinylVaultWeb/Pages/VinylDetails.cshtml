@@ -1,0 +1,54 @@
+﻿@page
+@model VinylVaultWeb.Pages.VinylDetailsModel
+@{
+    ViewData["Title"] = @Model.Album.Name;
+}
+
+<a href="/Marketplace" class="btn btn-outline-light back-btn">← Back to Marketplace</a>
+
+<div class="album-product-layout">
+
+    <div class="album-images">
+        <img src="@Model.Album.CoverUrl" alt="@Model.Album.Name" />
+
+        <div class="spotify-player">
+            <iframe src="https://open.spotify.com/embed/album/@Model.Album.Id"
+                    width="100%" height="380" frameborder="0"
+                    allowtransparency="true" allow="encrypted-media">
+            </iframe>
+        </div>
+    </div>
+
+
+    <div class="album-details">
+        <h2>@Model.Album.Name</h2>
+        <p><strong>Artist:</strong> @Model.Album.Artist</p>
+        <p><strong>Release Date:</strong> @Model.Album.ReleaseDate</p>
+
+        <div class="purchase-buttons">
+            <a class="btn btn-success" href="/BuyVinyl/@Model.Album.Id">Buy It Now</a>
+
+            @if (User.IsInRole("Seller"))
+            {
+                <a class="btn btn-warning"
+                   href="/SellVinyl?albumId=@Model.Album.Id&title=@Model.Album.Name&artist=@Model.Album.Artist">
+                    Sell This Vinyl
+                </a>
+            }
+
+            <button class="btn-outline">♡ Add to Watchlist</button>
+        </div>
+
+
+        <div class="tracklist">
+            <h4>Tracklist:</h4>
+            <ul>
+                @foreach (var track in Model.Album.Tracks)
+                {
+                    <li>@track</li>
+                }
+            </ul>
+        </div>
+    </div>
+
+</div>

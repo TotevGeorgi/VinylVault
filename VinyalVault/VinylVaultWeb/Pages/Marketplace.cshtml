@@ -1,0 +1,124 @@
+﻿@page
+@model VinylVaultWeb.Pages.MarketplaceModel
+@{
+    ViewData["Title"] = "Marketplace";
+}
+
+<h2>Marketplace</h2>
+
+<form method="get" class="mb-4">
+    <input type="text" name="Query" value="@Model.Query" placeholder="Search for vinyl or song..." />
+
+    <select name="SortBy" onchange="this.form.submit()">
+        <option value="popular" selected="@("popular" == Model.SortBy)">Popular Now</option>
+        <option value="newest" selected="@("newest" == Model.SortBy)">Newest</option>
+        <option value="mostlistened" selected="@("mostlistened" == Model.SortBy)">Most Listened To</option>
+    </select>
+
+    <br />
+    <label><strong>Genres:</strong></label><br />
+    <button type="button" onclick="selectAllGenres()">Select All</button>
+    <button type="button" onclick="clearGenres()">Clear</button>
+    <br />
+
+    <select id="genreSelect" name="Genres" multiple size="6" onchange="this.form.submit()">
+        @foreach (var genre in Model.AvailableGenres)
+        {
+            <option value="@genre" selected="@Model.Genres.Contains(genre)">@genre</option>
+        }
+    </select>
+
+    <br />
+    <button type="submit">Search</button>
+</form>
+
+@if (string.IsNullOrWhiteSpace(Model.Query) && Model.MostPopularAlbums.Any())
+{
+    <h3>🔥 Most Popular Albums</h3>
+    <div style="position: relative;">
+        <button onclick="scrollSlider('popularSlider', -1)" class="arrow left">←</button>
+        <div id="popularSlider" class="popular-slider" style="display:flex; overflow-x:auto; scroll-behavior:smooth; gap: 10px; padding: 10px;">
+            @foreach (var album in Model.MostPopularAlbums)
+            {
+                <div class="vinyl-card small" style="cursor:pointer; min-width: 160px;" onclick="location.href='/VinylDetails?id=@album.Id'">
+                    <img src="@album.CoverUrl" alt="@album.Name" width="160" />
+                    <h5>@album.Name</h5>
+                    <p class="small">@album.Artist</p>
+                </div>
+            }
+        </div>
+        <button onclick="scrollSlider('popularSlider', 1)" class="arrow right">→</button>
+    </div>
+}
+
+@if (Model.TopResult != null)
+{
+    <h3 class="mt-5">🎵 Most Popular Song Match</h3>
+    <div class="vinyl-grid">
+        <div class="vinyl-card" style="cursor:pointer;" onclick="location.href='/VinylDetails?id=@Model.TopResult.Id'">
+            <img src="@Model.TopResult.CoverUrl" alt="@Model.TopResult.Name" width="200" />
+            <h4>@Model.TopResult.Name</h4>
+            <p>@Model.TopResult.Artist</p>
+            <span class="tag song">Type: Song</span><br />
+        </div>
+    </div>
+}
+
+<h3>🎵 New Releases</h3>
+<div class="new-releases-container">
+    @foreach (var album in Model.NewReleases)
+    {
+        <div class="new-release-card" onclick="location.href='/VinylDetails?id=@album.Id'">
+            <img src="@album.CoverUrl" alt="@album.Name" />
+            <h5>@album.Name</h5>
+            <p class="small">@album.Artist</p>
+        </div>
+    }
+</div>
+
+
+@if (Model.Albums.Any())
+{
+    <h3 class="mt-4">📀 Vinyl Matches</h3>
+    <div class="vinyl-grid">
+        @foreach (var album in Model.Albums)
+        {
+            <div class="vinyl-card" style="cursor:pointer;" onclick="location.href='/VinylDetails?id=@album.Id'">
+                <img src="@album.CoverUrl" alt="@album.Name" width="200" />
+                <h4>@album.Name</h4>
+                <p>@album.Artist</p>
+                <span class="tag vinyl">Type: Vinyl</span><br />
+            </div>
+        }
+    </div>
+}
+else if (Model.TopResult == null)
+{
+    <p>No results found.</p>
+}
+
+@section Scripts {
+    <script>
+        function scrollSlider(sliderId, direction) {
+            const slider = document.getElementById(sliderId);
+            const scrollAmount = 220;
+            slider.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+        }
+
+        function selectAllGenres() {
+            const select = document.getElementById("genreSelect");
+            for (let i = 0; i < select.options.length; i++) {
+                select.options[i].selected = true;
+            }
+            select.form.submit();
+        }
+
+        function clearGenres() {
+            const select = document.getElementById("genreSelect");
+            for (let i = 0; i < select.options.length; i++) {
+                select.options[i].selected = false;
+            }
+            select.form.submit();
+        }
+    </script>
+}
