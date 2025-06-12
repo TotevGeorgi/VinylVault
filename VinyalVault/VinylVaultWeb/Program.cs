@@ -6,7 +6,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using CoreLayer.Services;
 using DataLayer;
-using DataLayer.Services;
 using Common;
 using CoreLayer;
 

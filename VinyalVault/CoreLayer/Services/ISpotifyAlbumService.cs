@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Common.DTOs;
 
-namespace DataLayer.Services
+namespace CoreLayer.Services
 {
     public interface ISpotifyAlbumService
     {

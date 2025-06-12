@@ -8,7 +8,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 
-namespace DataLayer.Services
+namespace CoreLayer.Services
 {
     public class SpotifyGenreService : IGenreService
     {

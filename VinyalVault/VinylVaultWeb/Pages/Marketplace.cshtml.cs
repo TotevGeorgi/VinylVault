@@ -1,6 +1,5 @@
 using Common.DTOs;
 using CoreLayer.Services;
-using DataLayer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Generic;

@@ -6,7 +6,7 @@ using Common;
 using DataLayer;
 using Common.DTOs;
 using System.Threading.Tasks;
-using DataLayer.Services;
+using CoreLayer.Services;
 
 namespace CoreLayer
 {

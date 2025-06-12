@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace DataLayer.Services
+namespace CoreLayer.Services
 {
     public class SpotifyAlbumService : ISpotifyAlbumService
     {
