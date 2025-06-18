@@ -1,4 +1,5 @@
 using Common.DTOs;
+using CoreLayer;
 using CoreLayer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,7 +14,7 @@ namespace VinylVaultWeb.Pages
         private readonly ISpotifyAlbumService _albumService;
 
         public SpotifyAlbumPreview? TopResult { get; set; }
-        public List<SpotifyAlbumPreview> Albums { get; set; } = new();
+        public List<AlbumAvailability> Albums { get; set; } = new();
         public List<SpotifyAlbumPreview> MostPopularAlbums { get; set; } = new();
         public List<SpotifyAlbumPreview> NewReleases { get; set; } = new();
 
@@ -39,21 +40,27 @@ namespace VinylVaultWeb.Pages
 
             if (!string.IsNullOrWhiteSpace(Query))
             {
-                (TopResult, Albums) = await _albumService.SearchSmartAsync(Query);
+                (TopResult, var searchResults) = await _albumService.SearchSmartAsync(Query);
 
                 if (Genres.Any())
                 {
-                    Albums = Albums.Where(a =>
+                    searchResults = searchResults.Where(a =>
                         a.Genres != null && a.Genres.Any(g => Genres.Contains(g, System.StringComparer.OrdinalIgnoreCase))
                     ).ToList();
                 }
 
-                Albums = SortBy switch
+                searchResults = SortBy switch
                 {
-                    "newest" => Albums.OrderByDescending(a => a.ReleaseDate).ToList(),
-                    "mostlistened" => Albums.OrderByDescending(a => a.Popularity).ToList(),
-                    _ => Albums
+                    "newest" => searchResults.OrderByDescending(a => a.ReleaseDate).ToList(),
+                    "mostlistened" => searchResults.OrderByDescending(a => a.Popularity).ToList(),
+                    _ => searchResults
                 };
+
+                Albums = searchResults.Select(a => new AlbumAvailability
+                {
+                    Album = a,
+                    IsAvailable = a.IsAvailable
+                }).ToList();
 
                 MostPopularAlbums.Clear();
                 NewReleases.Clear();

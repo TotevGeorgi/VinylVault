@@ -6,11 +6,12 @@
 
 <h2>Buy Vinyl: @Model.AlbumName</h2>
 
-@if (Model.Message != null)
+@if (!string.IsNullOrEmpty(Model.Message))
 {
     <div class="alert alert-success">@Model.Message</div>
 }
-else if (Model.Sellers != null && Model.Sellers.Any())
+
+@if (Model.Sellers != null && Model.Sellers.Any())
 {
     <form method="post">
         <div class="form-group">
@@ -20,11 +21,13 @@ else if (Model.Sellers != null && Model.Sellers.Any())
                 {
                     <label class="seller-card">
                         <input type="radio" name="SelectedVinylId" value="@vinyl.Id" required />
-                        <img src="@vinyl.ImagePath" alt="Vinyl Image" width="100" />
-                        <div>
-                            <strong>@vinyl.SellerEmail</strong><br />
-                            Condition: @vinyl.Condition<br />
-                            @vinyl.Description
+                        <div class="seller-content">
+                            <img src="@vinyl.ImagePath" alt="Vinyl Image" width="100" />
+                            <div>
+                                <strong>@vinyl.SellerEmail</strong><br />
+                                Condition: @vinyl.Condition<br />
+                                @vinyl.Description
+                            </div>
                         </div>
                     </label>
                 }

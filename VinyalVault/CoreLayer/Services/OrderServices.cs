@@ -1,4 +1,5 @@
 ﻿using Common.DTOs;
+using Common.Repositories;
 using DataLayer;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,9 +8,9 @@ namespace CoreLayer.Services
 {
     public class OrderService : IOrderService
     {
-        private readonly DBOrder _dbOrder;
+        private readonly IOrderRepository _dbOrder;
 
-        public OrderService(DBOrder dbOrder)
+        public OrderService(IOrderRepository dbOrder)
         {
             _dbOrder = dbOrder;
         }
@@ -19,7 +20,7 @@ namespace CoreLayer.Services
             return await _dbOrder.AddOrder(buyerEmail, vinylId);
         }
 
-        public async Task<List<Order>> GetOrdersByUser(string email)
+        public async Task<List<OrderDTO>> GetOrdersByUser(string email)
         {
             return await _dbOrder.GetOrdersByUser(email);
         }

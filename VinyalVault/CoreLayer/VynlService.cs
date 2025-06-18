@@ -7,16 +7,16 @@ using DataLayer;
 using Common.DTOs;
 using System.Threading.Tasks;
 using CoreLayer.Services;
+using Common.Repositories;
 
 namespace CoreLayer
 {
     public class VinylService : IVinylService
     {
-        private readonly DBVinyl _dbVinyl;
         private readonly ISpotifyAlbumService _spotifyAlbumService;
+        private readonly IVinylRepository _dbVinyl;
 
-
-        public VinylService(DBVinyl dbVinyl, ISpotifyAlbumService spotifyAlbumService)
+        public VinylService(IVinylRepository dbVinyl, ISpotifyAlbumService spotifyAlbumService)
         {
             _dbVinyl = dbVinyl;
             _spotifyAlbumService = spotifyAlbumService;
@@ -55,5 +55,11 @@ namespace CoreLayer
         {
             return await _spotifyAlbumService.GetAlbumDetailsAsync(albumId);
         }
+        public async Task<bool> IsAlbumAvailable(string albumId)
+        {
+            var vinyls = await _dbVinyl.GetVinylsByAlbumIdAndStatus(albumId, "Available");
+            return vinyls.Any();
+        }
+
     }
 }

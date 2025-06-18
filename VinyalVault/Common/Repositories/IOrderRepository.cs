@@ -1,15 +1,16 @@
-﻿using System;
+﻿using Common.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Common.DTOs;
 
-namespace CoreLayer.Services
+namespace Common.Repositories
 {
-    public interface IOrderService
+    public interface IOrderRepository
     {
         Task<bool> AddOrder(string buyerEmail, int vinylId);
         Task<List<OrderDTO>> GetOrdersByUser(string email);
     }
+
 }

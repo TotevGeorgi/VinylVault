@@ -16,6 +16,7 @@ namespace Common.DTOs
         public int? EstimatedPopularity { get; set; }
         public string? ReleaseDate { get; set; }
         public int Popularity { get; set; }
+        public bool IsAvailable { get; set; }
         public List<string> Genres { get; set; } = new();
 
     }

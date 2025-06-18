@@ -4,7 +4,35 @@
     ViewData["Title"] = "Order History";
 }
 
-<div class="container">
-    <h2 class="text-center mt-5">Your Order History</h2>
-    <p class="text-center">This is a protected page. Only logged-in users can view their order history.</p>
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Your Order History</h2>
+
+    @if (Model.Orders != null && Model.Orders.Any())
+    {
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Order ID</th>
+                    <th>Vinyl ID</th>
+                    <th>Purchase Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model.Orders)
+                {
+                    <tr>
+                        <td>@order.Id</td>
+                        <td>@order.VinylId</td>
+                        <td>@order.PurchaseDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-info text-center">
+            You haven't purchased any vinyls yet.
+        </div>
+    }
 </div>

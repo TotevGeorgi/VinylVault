@@ -5,10 +5,11 @@ using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Common.DTOs;
 using Common;
+using Common.Repositories;
 
 namespace DataLayer
 {
-    public class DBVinyl
+    public class DBVinyl : IVinylRepository
     {
         private readonly DBConnection _dbConnection;
 

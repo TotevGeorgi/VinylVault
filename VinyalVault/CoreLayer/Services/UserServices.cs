@@ -1,5 +1,6 @@
 ﻿using Common;
 using Common.DTOs;
+using Common.Repositories;
 using DataLayer;
 using System.Threading.Tasks;
 
@@ -7,59 +8,67 @@ namespace CoreLayer.Services
 {
     public class UserService : IUserService
     {
-        private readonly DBUser _userRepository;
+        private readonly IUserRepository _userRepository;
 
-        public UserService(DBUser userRepository)
+        public UserService(IUserRepository userRepository)
         {
             _userRepository = userRepository;
         }
 
-        // Register a new user (can be User, Seller, or Admin)
-        public async Task<bool> RegisterUser(Person person)
+        public async Task<Guid?> RegisterUser(Person person)
         {
-            return await _userRepository.RegisterUser(person);  // Await async method in DBUser
+            return await _userRepository.RegisterUser(person);
         }
 
-        // Check if an email exists in the database
+
         public async Task<bool> EmailExists(string email)
         {
-            return await _userRepository.EmailExists(email);  // Await async method in DBUser
+            return await _userRepository.EmailExists(email);  
         }
 
-        // Authenticate user by email and password
         public async Task<Person?> AuthenticateUser(string email, string password)
         {
-            return await _userRepository.GetUserByEmail(email);  // Await async method in DBUser
+            var person = await _userRepository.GetUserByEmail(email);
+
+            if (person == null)
+                return null;
+
+            if (!PasswordHasher.Verify(password, person.PasswordHash))
+                return null;
+
+            if (person.UserId == Guid.Empty)
+            {
+                Console.WriteLine($"[ERROR] User found but has empty UserId for email: {email}");
+                return null;
+            }
+
+            return person;
         }
 
-        // Get user by email
+
         public async Task<Person?> GetUserByEmail(string email)
         {
-            return await _userRepository.GetUserByEmail(email);  // Await async method in DBUser
+            return await _userRepository.GetUserByEmail(email);  
         }
 
-        // Update user profile (full name, address)
         public bool UpdateUserProfile(string email, string fullName, string address)
         {
-            return _userRepository.UpdateUserProfile(email, fullName, address);  // Sync operation, no await needed
+            return _userRepository.UpdateUserProfile(email, fullName, address);  
         }
 
-        // Upgrade user to seller
         public async Task<bool> UpgradeToSeller(string email)
         {
-            return await _userRepository.UpgradeToSeller(email);  // Await async method in DBUser
+            return await _userRepository.UpgradeToSeller(email);  
         }
 
-        // Admin can delete a user
         public async Task<bool> DeleteUser(string email)
         {
-            return await _userRepository.DeleteUser(email);  // Await async method in DBUser
+            return await _userRepository.DeleteUser(email);  
         }
 
-        // Admin can remove a vinyl item
         public async Task<bool> RemoveItem(string email, string item)
         {
-            return await _userRepository.RemoveItem(email, item);  // Await async method in DBUser
+            return await _userRepository.RemoveItem(email, item);
         }
     }
 }

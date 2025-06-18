@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using CoreLayer.Services;
-using Common.DTOs;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
+using CoreLayer;
+using Common.DTOs;
+using CoreLayer.Services;
 using Common;
 
 namespace VinylVaultWeb.Pages
@@ -14,7 +15,7 @@ namespace VinylVaultWeb.Pages
         private readonly IUserService _userService;
 
         [BindProperty]
-        public Person User { get; set; }
+        public RegisterDTO Input { get; set; }
 
         public string? ErrorMessage { get; set; }
         public string? EmailError { get; set; }
@@ -26,33 +27,60 @@ namespace VinylVaultWeb.Pages
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (!ModelState.IsValid)
-                return Page();
 
-            if (await _userService.EmailExists(User.Email))  // Ensure EmailExists is awaited
+            if (!ModelState.IsValid)
+            {
+                Console.WriteLine("[DEBUG] SignUp: Invalid model state");
+                foreach (var key in ModelState.Keys)
+                {
+                    var state = ModelState[key];
+                    foreach (var error in state.Errors)
+                    {
+                        Console.WriteLine($"[ERROR] Field '{key}' - {error.ErrorMessage}");
+                    }
+                }
+                return Page();
+            }
+
+            if (await _userService.EmailExists(Input.Email))
             {
                 EmailError = "This email is already registered.";
                 return Page();
             }
 
-            bool isRegistered = await _userService.RegisterUser(User);  // Await the asynchronous call
+            var newUser = new Person
+            {
+                UserId = Guid.NewGuid(),
+                Email = Input.Email,
+                PasswordHash = PasswordHasher.Hash(Input.Password),
+                FullName = Input.FullName,
+                Address = Input.Address,
+                Role = "User"
+            };
 
-            if (!isRegistered)
+            Guid? insertedUserId = await _userService.RegisterUser(newUser);
+
+            if (insertedUserId == null)
             {
                 ErrorMessage = "Failed to create account.";
                 return Page();
             }
 
+
             var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.Name, User.Email),
-        new Claim(ClaimTypes.Email, User.Email)
-    };
+            {
+                new Claim(ClaimTypes.Name, Input.Email),
+                new Claim(ClaimTypes.Email, Input.Email),
+                new Claim(ClaimTypes.Role, "User"),
+                new Claim("FullName", Input.FullName ?? ""),
+                new Claim(ClaimTypes.NameIdentifier, insertedUserId.Value.ToString())
+            };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
 
             return RedirectToPage("/Index");
         }

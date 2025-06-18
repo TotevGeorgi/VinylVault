@@ -1,4 +1,5 @@
 ﻿using Common.DTOs;
+using Common.Repositories;
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DataLayer
 {
-    public class DBOrder
+    public class DBOrder : IOrderRepository
     {
         private readonly DBConnection _dbConnection;
 
@@ -35,26 +36,35 @@ namespace DataLayer
             }
         }
 
-        public async Task<List<Order>> GetOrdersByUser(string email)
+        public async Task<List<OrderDTO>> GetOrdersByUser(string email)
         {
-            var orders = new List<Order>();
+            var orders = new List<OrderDTO>();
 
             using var conn = _dbConnection.GetConnection();
             try
             {
-                string query = "SELECT Id, BuyerEmail, VinylId, PurchaseDate FROM Orders WHERE BuyerEmail = @Email";
+                string query = @"
+                SELECT o.Id, o.BuyerEmail, o.VinylId, o.PurchaseDate,
+                       v.Title, v.Artist
+                FROM Orders o
+                INNER JOIN Vinyls v ON o.VinylId = v.Id
+                WHERE o.BuyerEmail = @Email
+                ORDER BY o.PurchaseDate DESC";
+
                 using var cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Email", email);
 
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (reader.Read())
                 {
-                    orders.Add(new Order
+                    orders.Add(new OrderDTO
                     {
                         Id = reader.GetInt32(0),
                         BuyerEmail = reader.GetString(1),
                         VinylId = reader.GetInt32(2),
-                        PurchaseDate = reader.GetDateTime(3)
+                        PurchaseDate = reader.GetDateTime(3),
+                        Title = reader.GetString(4),
+                        Artist = reader.GetString(5)
                     });
                 }
             }
@@ -65,5 +75,6 @@ namespace DataLayer
 
             return orders;
         }
+
     }
 }

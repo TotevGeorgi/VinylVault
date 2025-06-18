@@ -1,19 +1,32 @@
-using Microsoft.AspNetCore.Authorization;
+using Common.DTOs;
+using CoreLayer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace VinylVaultWeb.Pages
 {
-    [Authorize]
     public class OrderHistoryModel : PageModel
     {
-        public IActionResult OnGet()
+        private readonly IOrderService _orderService;
+
+        public List<OrderDTO> Orders { get; set; } = new();
+
+        public OrderHistoryModel(IOrderService orderService)
         {
-            if (!User.Identity.IsAuthenticated)
+            _orderService = orderService;
+        }
+
+        public async Task<IActionResult> OnGetAsync()
+        {
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
             {
                 return RedirectToPage("/LogIn");
             }
 
+            Orders = await _orderService.GetOrdersByUser(userId);
             return Page();
         }
     }

@@ -17,6 +17,7 @@ namespace VinylVaultWeb.Pages
         public List<Vinyl> Sellers { get; set; }
         public string AlbumName { get; set; }
         public string? Message { get; set; }
+        public string? ErrorMessage { get; set; }
 
         [BindProperty]
         public int SelectedVinylId { get; set; }
@@ -30,6 +31,7 @@ namespace VinylVaultWeb.Pages
 
         public async Task<IActionResult> OnGetAsync(string albumId)
         {
+
             var albumDetails = await _vinylService.GetAlbumDetailsByIdAsync(albumId);
 
             if (albumDetails == null)
@@ -38,28 +40,38 @@ namespace VinylVaultWeb.Pages
             }
 
             AlbumName = albumDetails.Name;
-
             Sellers = await _vinylService.GetAvailableVinylsByAlbum(albumId);
+
 
             return Page();
         }
 
-
         public async Task<IActionResult> OnPostAsync(string albumId)
         {
-            string? buyerEmail = HttpContext.User.Identity?.Name;
-            if (string.IsNullOrEmpty(buyerEmail)) return RedirectToPage("/Login");
 
-            bool updated = await _vinylService.MarkAsSold(SelectedVinylId);
-            if (!updated)
+            string? buyerEmail = HttpContext.User.Identity?.Name;
+            if (string.IsNullOrEmpty(buyerEmail))
             {
-                Message = "Error: Could not mark vinyl as sold.";
-                return await OnGetAsync(albumId);
+                return RedirectToPage("/Login");
             }
 
-            await _orderService.AddOrder(buyerEmail, SelectedVinylId);
-            Message = "Purchase successful! This vinyl has been added to your order history.";
-            return await OnGetAsync(albumId);
+            bool updated = await _vinylService.MarkAsSold(SelectedVinylId);
+
+            if (!updated)
+            {
+                ErrorMessage = "Error: Could not mark vinyl as sold.";
+            }
+            else
+            {
+                await _orderService.AddOrder(buyerEmail, SelectedVinylId);
+                Message = "Purchase successful! This vinyl has been added to your order history.";
+            }
+
+            var albumDetails = await _vinylService.GetAlbumDetailsByIdAsync(albumId);
+            AlbumName = albumDetails?.Name ?? "";
+            Sellers = await _vinylService.GetAvailableVinylsByAlbum(albumId);
+
+            return Page();
         }
     }
 }

@@ -10,7 +10,7 @@ namespace VinylVaultWeb.Pages
         public async Task<IActionResult> OnPostAsync()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToPage("/Index"); // Redirect to homepage after logout
+            return RedirectToPage("/Index");
         }
     }
 }

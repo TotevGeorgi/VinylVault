@@ -17,6 +17,8 @@ namespace CoreLayer
         Task<List<Vinyl>> GetAvailableVinylsByAlbum(string albumId);
         Task<bool> MarkAsSold(int vinylId);
         Task<SpotifyAlbumDetails> GetAlbumDetailsByIdAsync(string albumId);
+        Task<bool> IsAlbumAvailable(string albumId);
+
 
     }
 }

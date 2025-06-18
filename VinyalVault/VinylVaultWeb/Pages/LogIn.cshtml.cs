@@ -13,13 +13,7 @@ namespace VinylVaultWeb.Pages
         private readonly IUserService _userService;
 
         [BindProperty]
-        public string Email { get; set; }
-
-        [BindProperty]
-        public string Password { get; set; }
-
-        [BindProperty]
-        public bool RememberMe { get; set; } = false;
+        public LoginDTO Input { get; set; } = new();
 
         public string? ErrorMessage { get; set; }
 
@@ -33,9 +27,10 @@ namespace VinylVaultWeb.Pages
             if (!ModelState.IsValid)
                 return Page();
 
-            var user = await _userService.AuthenticateUser(Email, Password);
+            var user = await _userService.AuthenticateUser(Input.Email, Input.Password);
 
-            if (user == null)
+
+            if (user == null || user.UserId == Guid.Empty)
             {
                 ErrorMessage = "Invalid email or password. Please try again.";
                 return Page();
@@ -43,9 +38,11 @@ namespace VinylVaultWeb.Pages
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.Email),  
-                new Claim(ClaimTypes.Role, user.Role ?? "User"),  
-                new Claim("FullName", user.FullName ?? "") 
+                new Claim(ClaimTypes.Name, user.Email),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role ?? "User"),
+                new Claim("FullName", user.FullName ?? ""),
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -53,7 +50,7 @@ namespace VinylVaultWeb.Pages
 
             var authProperties = new AuthenticationProperties
             {
-                IsPersistent = RememberMe
+                IsPersistent = Input.RememberMe
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);

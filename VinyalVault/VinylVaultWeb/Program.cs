@@ -5,9 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using CoreLayer.Services;
+using CoreLayer;
 using DataLayer;
 using Common;
-using CoreLayer;
+using Common.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,15 +26,17 @@ builder.Services.AddAuthorization();
 builder.Services.AddSession();
 builder.Services.AddRazorPages();
 
-builder.Services.AddSingleton<DBConnection>();  
-builder.Services.AddScoped<DBUser>();  
-builder.Services.AddScoped<DBVinyl>();
-builder.Services.AddScoped<DBOrder>();
+builder.Services.AddSingleton<DBConnection>();
+
+builder.Services.AddScoped<IUserRepository, DBUser>();
+builder.Services.AddScoped<IVinylRepository, DBVinyl>();
+builder.Services.AddScoped<IOrderRepository, DBOrder>();
+builder.Services.AddScoped<IWishlistRepository, DBWishlist>();
+
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IVinylService, VinylService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
-
-
-builder.Services.AddScoped<IUserService, UserService>();  
-builder.Services.AddScoped<IVinylService, VinylService>();  
+builder.Services.AddScoped<IWishlistService, WishlistService>();
 
 builder.Services.AddHttpClient<IGenreService, SpotifyGenreService>();
 builder.Services.AddHttpClient<ISpotifyAlbumService, SpotifyAlbumService>();
@@ -48,11 +51,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-app.UseAuthentication();  
-app.UseAuthorization();   
-app.UseSession();         
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseSession();
 
 app.MapRazorPages();
 

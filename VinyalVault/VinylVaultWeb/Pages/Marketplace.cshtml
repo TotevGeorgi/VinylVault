@@ -37,13 +37,22 @@
     <h3>🔥 Most Popular Albums</h3>
     <div style="position: relative;">
         <button onclick="scrollSlider('popularSlider', -1)" class="arrow left">←</button>
-        <div id="popularSlider" class="popular-slider" style="display:flex; overflow-x:auto; scroll-behavior:smooth; gap: 10px; padding: 10px;">
+        <div id="popularSlider" class="popular-slider">
             @foreach (var album in Model.MostPopularAlbums)
             {
-                <div class="vinyl-card small" style="cursor:pointer; min-width: 160px;" onclick="location.href='/VinylDetails?id=@album.Id'">
+                <div class="vinyl-card small" onclick="location.href='/VinylDetails?id=@album.Id'">
                     <img src="@album.CoverUrl" alt="@album.Name" width="160" />
                     <h5>@album.Name</h5>
                     <p class="small">@album.Artist</p>
+
+                    @if (album.IsAvailable)
+                    {
+                        <div class="status available">✅ Available</div>
+                    }
+                    else
+                    {
+                        <div class="status unavailable">❌ Not Available</div>
+                    }
                 </div>
             }
         </div>
@@ -55,11 +64,20 @@
 {
     <h3 class="mt-5">🎵 Most Popular Song Match</h3>
     <div class="vinyl-grid">
-        <div class="vinyl-card" style="cursor:pointer;" onclick="location.href='/VinylDetails?id=@Model.TopResult.Id'">
+        <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@Model.TopResult.Id'">
             <img src="@Model.TopResult.CoverUrl" alt="@Model.TopResult.Name" width="200" />
             <h4>@Model.TopResult.Name</h4>
             <p>@Model.TopResult.Artist</p>
             <span class="tag song">Type: Song</span><br />
+
+            @if (Model.TopResult.IsAvailable)
+            {
+                <div class="status available">✅ Available</div>
+            }
+            else
+            {
+                <div class="status unavailable">❌ Not Available</div>
+            }
         </div>
     </div>
 }
@@ -72,22 +90,40 @@
             <img src="@album.CoverUrl" alt="@album.Name" />
             <h5>@album.Name</h5>
             <p class="small">@album.Artist</p>
+
+            @if (album.IsAvailable)
+            {
+                <div class="status available">✅ Available</div>
+            }
+            else
+            {
+                <div class="status unavailable">❌ Not Available</div>
+            }
         </div>
     }
 </div>
-
 
 @if (Model.Albums.Any())
 {
     <h3 class="mt-4">📀 Vinyl Matches</h3>
     <div class="vinyl-grid">
-        @foreach (var album in Model.Albums)
+        @foreach (var item in Model.Albums)
         {
-            <div class="vinyl-card" style="cursor:pointer;" onclick="location.href='/VinylDetails?id=@album.Id'">
-                <img src="@album.CoverUrl" alt="@album.Name" width="200" />
-                <h4>@album.Name</h4>
-                <p>@album.Artist</p>
+            <div class="vinyl-card">
+                <img src="@item.Album.CoverUrl" alt="@item.Album.Name" />
+                <h4>@item.Album.Name</h4>
+                <p>@item.Album.Artist</p>
                 <span class="tag vinyl">Type: Vinyl</span><br />
+
+                @if (item.IsAvailable)
+                {
+                    <div class="status available">✅ Available</div>
+                    <a href="/VinylDetails?id=@item.Album.Id" class="btn btn-outline-success btn-sm mt-2">View Details</a>
+                }
+                else
+                {
+                    <div class="status unavailable">❌ Not Available</div>
+                }
             </div>
         }
     </div>
