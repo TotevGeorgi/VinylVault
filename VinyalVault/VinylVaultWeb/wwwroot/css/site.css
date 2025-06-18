@@ -18,6 +18,7 @@ footer {
     flex: 1;
 }
 
+/* Hero */
 .hero {
     background: url('/img/vinyl-bg.jpg') no-repeat center center;
     background-size: cover;
@@ -30,6 +31,7 @@ footer {
         font-weight: bold;
     }
 
+/* Branding */
 .navbar-brand {
     font-weight: bold;
     font-size: 1.5rem;
@@ -55,6 +57,7 @@ footer {
         color: #fff;
     }
 
+/* Card & Auth */
 .card {
     border-radius: 10px;
 }
@@ -75,7 +78,7 @@ footer {
         text-decoration: underline;
     }
 
-/* Marketplace Grid */
+/* Vinyl Grid */
 .vinyl-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -114,17 +117,75 @@ footer {
         margin-top: 5px;
     }
 
-        .vinyl-card .tag.song {
-            background-color: #dff0d8;
-            color: #388e3c;
-        }
+.tag.song {
+    background-color: #dff0d8;
+    color: #388e3c;
+}
 
-        .vinyl-card .tag.vinyl {
-            background-color: #e0e0e0;
-            color: #555;
-        }
+.tag.vinyl {
+    background-color: #e0e0e0;
+    color: #555;
+}
 
-/* Search Bar Styling */
+/* Scrollable Slider Sections */
+.slider-container {
+    margin-bottom: 40px;
+    position: relative;
+    padding: 0 30px;
+}
+
+.slider-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    max-width: 100vw;
+    margin: 0 auto;
+}
+
+.popular-slider {
+    display: flex;
+    overflow-x: auto;
+    gap: 16px;
+    padding: 20px 0;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+}
+
+    .popular-slider::-webkit-scrollbar {
+        display: none;
+    }
+
+    .popular-slider .vinyl-card {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        width: 180px;
+    }
+
+/* Arrows */
+.arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    cursor: pointer;
+    z-index: 10;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+    .arrow.left {
+        left: -10px;
+    }
+
+    .arrow.right {
+        right: -10px;
+    }
+
+/* Search Bar */
 form input[type="text"] {
     padding: 8px 12px;
     width: 300px;
@@ -139,82 +200,58 @@ form input[type="text"] {
         box-shadow: 0 0 5px #ff5733;
     }
 
-/* Most Popular Vinyls Slider */
-.slider-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
+/* Genre Filter */
+.genre-filter {
+    width: 300px;
+    height: 120px;
+    border: 2px solid #ff5733;
+    border-radius: 6px;
+    padding: 4px;
+    margin-top: 5px;
 }
 
-.popular-slider {
-    display: flex;
-    overflow-x: auto;
-    gap: 16px;
-    padding: 12px 0;
-    scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
-}
-
-    .popular-slider::-webkit-scrollbar {
-        display: none;
+    .genre-filter option {
+        padding: 5px;
     }
 
-    .popular-slider .vinyl-card {
-        flex: 0 0 auto;
-        scroll-snap-align: start;
-        width: 180px;
+.genre-actions {
+    margin: 5px 0;
+}
+
+    .genre-actions button {
+        margin-right: 8px;
+        padding: 4px 10px;
+        background-color: #eee;
         border: 1px solid #ccc;
-        padding: 10px;
-        background-color: #f9f9f9;
-        border-radius: 10px;
-        text-align: center;
-        transition: transform 0.2s ease-in-out;
+        border-radius: 4px;
+        cursor: pointer;
     }
 
-        .popular-slider .vinyl-card:hover {
-            transform: scale(1.03);
+        .genre-actions button:hover {
+            background-color: #ff5733;
+            color: white;
         }
 
-        .popular-slider .vinyl-card img {
-            border-radius: 5px;
-            margin-bottom: 10px;
-            width: 100%;
-            height: auto;
-        }
-
-        .popular-slider .vinyl-card h5 {
-            margin: 5px 0 2px;
-            font-size: 1rem;
-        }
-
-        .popular-slider .vinyl-card p {
-            font-size: 0.85rem;
-            margin-bottom: 4px;
-        }
-
-/* Slider Arrows */
-.arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 24px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    padding: 8px 12px;
-    cursor: pointer;
-    z-index: 10;
+/* Status Tags */
+.status {
+    font-weight: bold;
+    text-align: center;
+    padding: 6px 0;
+    border-radius: 5px;
+    margin-top: 10px;
 }
 
-    .arrow.left {
-        left: -10px;
+    .status.available {
+        background-color: #d4edda;
+        color: #155724;
     }
 
-    .arrow.right {
-        right: -10px;
+    .status.unavailable {
+        background-color: #f8d7da;
+        color: #721c24;
     }
 
-/* Album Details Page */
+/* Album Details Layout */
 .album-product-layout {
     display: flex;
     gap: 30px;
@@ -299,148 +336,8 @@ form input[type="text"] {
         background-color: #3367ff;
         color: white;
     }
-.market-section {
-    margin-bottom: 40px;
-}
 
-.vinyl-link {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-}
-.genre-filter {
-    width: 300px;
-    height: 120px;
-    border: 2px solid #ff5733;
-    border-radius: 6px;
-    padding: 4px;
-    margin-top: 5px;
-}
-
-    .genre-filter option {
-        padding: 5px;
-    }
-
-.genre-actions {
-    margin: 5px 0;
-}
-
-    .genre-actions button {
-        margin-right: 8px;
-        padding: 4px 10px;
-        background-color: #eee;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-        .genre-actions button:hover {
-            background-color: #ff5733;
-            color: white;
-        }
-
-
-.new-releases-container,
-.popular-slider-container {
-    width: 75%;
-    max-width: 75vw; 
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 20px;
-    box-sizing: border-box;
-}
-
-.slider-wrapper {
-    max-width: 100vw;
-    margin: 0 auto;
-}
-
-.popular-slider {
-    display: flex;
-    gap: 20px; 
-    padding: 20px 0;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
-}
-
-    .popular-slider::-webkit-scrollbar {
-        display: none; 
-    }
-
-    .popular-slider .vinyl-card,
-    .new-release-card {
-        flex: 0 0 auto; 
-        width: 180px; 
-    }
-
-.new-releases-container {
-    max-height: 500px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    background-color: #fff;
-    border-radius: 8px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 15px;
-    padding: 10px;
-}
-
-.new-release-card {
-    cursor: pointer;
-    text-align: center;
-    padding: 10px;
-    border-radius: 8px;
-    background: #fafafa;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
-}
-
-    .new-release-card:hover {
-        transform: scale(1.05);
-    }
-
-    .new-release-card img {
-        width: 100%;
-        border-radius: 5px;
-        margin-bottom: 10px;
-    }
-
-.container {
-    max-width: 100% !important;
-    padding-left: 20px;
-    padding-right: 20px;
-}
-
-.seller-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.seller-card {
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-    .seller-card input[type="radio"] {
-        display: none;
-    }
-
-    .seller-card:hover {
-        background-color: #f0f0f0;
-    }
-
-    .seller-card input[type="radio"]:checked + img,
-    .seller-card input[type="radio"]:checked + img + div {
-        border: 2px solid #007bff;
-    }
-
+/* Wishlist */
 .wishlist-grid {
     display: flex;
     flex-wrap: wrap;
@@ -485,23 +382,41 @@ form input[type="text"] {
         margin-top: 10px;
     }
 
-        .wishlist-card .status.available {
-            background-color: #d4edda;
-            color: #155724;
-        }
+/* Sellers */
+.seller-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
 
-        .wishlist-card .status.unavailable {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+.seller-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .seller-card input[type="radio"] {
+        display: none;
+    }
+
+    .seller-card:hover {
+        background-color: #f0f0f0;
+    }
+
+    .seller-card input[type="radio"]:checked + img,
+    .seller-card input[type="radio"]:checked + img + div {
+        border: 2px solid #007bff;
+    }
+
 .radio-wrapper {
     display: flex;
     align-items: center;
     gap: 1rem;
-}
-
-.seller-card input[type="radio"] {
-    display: none;
 }
 
 .seller-card .seller-content {
@@ -522,11 +437,4 @@ form input[type="text"] {
 .seller-card input[type="radio"]:checked ~ .seller-content {
     border-color: #28a745;
     background-color: #e8f5e9;
-}
-
-.seller-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1rem;
 }

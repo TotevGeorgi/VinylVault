@@ -32,31 +32,61 @@
     <button type="submit">Search</button>
 </form>
 
+@if (Model.RecommendedAlbums.Any())
+{
+    <div class="slider-container">
+        <h3>🎧 Suggested For You</h3>
+        <div class="slider-wrapper">
+            <button onclick="scrollSlider('suggestedSlider', -1)" class="arrow left">←</button>
+            <div id="suggestedSlider" class="popular-slider">
+                @foreach (var album in Model.RecommendedAlbums)
+                {
+                    <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@album.Id'">
+                        <img src="@album.CoverUrl" alt="@album.Name" />
+                        <h5>@album.Name</h5>
+                        <p>@album.Artist</p>
+                        @if (album.IsAvailable)
+                        {
+                            <div class="status available">✅ Available</div>
+                        }
+                        else
+                        {
+                            <div class="status unavailable">❌ Not Available</div>
+                        }
+                    </div>
+                }
+            </div>
+            <button onclick="scrollSlider('suggestedSlider', 1)" class="arrow right">→</button>
+        </div>
+    </div>
+}
+
 @if (string.IsNullOrWhiteSpace(Model.Query) && Model.MostPopularAlbums.Any())
 {
-    <h3>🔥 Most Popular Albums</h3>
-    <div style="position: relative;">
-        <button onclick="scrollSlider('popularSlider', -1)" class="arrow left">←</button>
-        <div id="popularSlider" class="popular-slider">
-            @foreach (var album in Model.MostPopularAlbums)
-            {
-                <div class="vinyl-card small" onclick="location.href='/VinylDetails?id=@album.Id'">
-                    <img src="@album.CoverUrl" alt="@album.Name" width="160" />
-                    <h5>@album.Name</h5>
-                    <p class="small">@album.Artist</p>
-
-                    @if (album.IsAvailable)
-                    {
-                        <div class="status available">✅ Available</div>
-                    }
-                    else
-                    {
-                        <div class="status unavailable">❌ Not Available</div>
-                    }
-                </div>
-            }
+    <div class="slider-container">
+        <h3>🔥 Most Popular Albums</h3>
+        <div class="slider-wrapper">
+            <button onclick="scrollSlider('popularSlider', -1)" class="arrow left">←</button>
+            <div id="popularSlider" class="popular-slider">
+                @foreach (var album in Model.MostPopularAlbums)
+                {
+                    <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@album.Id'">
+                        <img src="@album.CoverUrl" alt="@album.Name" />
+                        <h5>@album.Name</h5>
+                        <p>@album.Artist</p>
+                        @if (album.IsAvailable)
+                        {
+                            <div class="status available">✅ Available</div>
+                        }
+                        else
+                        {
+                            <div class="status unavailable">❌ Not Available</div>
+                        }
+                    </div>
+                }
+            </div>
+            <button onclick="scrollSlider('popularSlider', 1)" class="arrow right">→</button>
         </div>
-        <button onclick="scrollSlider('popularSlider', 1)" class="arrow right">→</button>
     </div>
 }
 
@@ -65,11 +95,10 @@
     <h3 class="mt-5">🎵 Most Popular Song Match</h3>
     <div class="vinyl-grid">
         <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@Model.TopResult.Id'">
-            <img src="@Model.TopResult.CoverUrl" alt="@Model.TopResult.Name" width="200" />
+            <img src="@Model.TopResult.CoverUrl" alt="@Model.TopResult.Name" />
             <h4>@Model.TopResult.Name</h4>
             <p>@Model.TopResult.Artist</p>
             <span class="tag song">Type: Song</span><br />
-
             @if (Model.TopResult.IsAvailable)
             {
                 <div class="status available">✅ Available</div>
@@ -82,25 +111,30 @@
     </div>
 }
 
-<h3>🎵 New Releases</h3>
-<div class="new-releases-container">
-    @foreach (var album in Model.NewReleases)
-    {
-        <div class="new-release-card" onclick="location.href='/VinylDetails?id=@album.Id'">
-            <img src="@album.CoverUrl" alt="@album.Name" />
-            <h5>@album.Name</h5>
-            <p class="small">@album.Artist</p>
-
-            @if (album.IsAvailable)
+<div class="slider-container">
+    <h3>🆕 New Releases</h3>
+    <div class="slider-wrapper">
+        <button onclick="scrollSlider('newReleasesSlider', -1)" class="arrow left">←</button>
+        <div id="newReleasesSlider" class="popular-slider">
+            @foreach (var album in Model.NewReleases)
             {
-                <div class="status available">✅ Available</div>
-            }
-            else
-            {
-                <div class="status unavailable">❌ Not Available</div>
+                <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@album.Id'">
+                    <img src="@album.CoverUrl" alt="@album.Name" />
+                    <h5>@album.Name</h5>
+                    <p>@album.Artist</p>
+                    @if (album.IsAvailable)
+                    {
+                        <div class="status available">✅ Available</div>
+                    }
+                    else
+                    {
+                        <div class="status unavailable">❌ Not Available</div>
+                    }
+                </div>
             }
         </div>
-    }
+        <button onclick="scrollSlider('newReleasesSlider', 1)" class="arrow right">→</button>
+    </div>
 </div>
 
 @if (Model.Albums.Any())
@@ -114,7 +148,6 @@
                 <h4>@item.Album.Name</h4>
                 <p>@item.Album.Artist</p>
                 <span class="tag vinyl">Type: Vinyl</span><br />
-
                 @if (item.IsAvailable)
                 {
                     <div class="status available">✅ Available</div>

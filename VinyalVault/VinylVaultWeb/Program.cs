@@ -41,6 +41,10 @@ builder.Services.AddScoped<IWishlistService, WishlistService>();
 builder.Services.AddHttpClient<IGenreService, SpotifyGenreService>();
 builder.Services.AddHttpClient<ISpotifyAlbumService, SpotifyAlbumService>();
 
+builder.Services.AddSingleton<DBCashMarket>();
+builder.Services.AddScoped<ICacheService, CacheService>();
+
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

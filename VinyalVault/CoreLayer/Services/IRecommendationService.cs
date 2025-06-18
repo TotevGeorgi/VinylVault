@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Common.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,8 @@ using System.Threading.Tasks;
 
 namespace CoreLayer.Services
 {
-    internal interface IRecommendationService
+    public interface IRecommendationService
     {
+        Task<List<SpotifyAlbumPreview>> GetRecommendationsAsync(string userEmail);
     }
 }
