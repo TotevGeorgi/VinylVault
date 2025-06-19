@@ -7,9 +7,9 @@
 <div class="container mt-5">
     <h2 class="text-center mb-4">Your Profile</h2>
 
-    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    @if (!string.IsNullOrEmpty(Model.Message))
     {
-        <div class="alert alert-success">@Model.SuccessMessage</div>
+        <div class="alert alert-success">@Model.Message</div>
     }
 
     <form method="post" asp-page-handler="Save">
@@ -28,7 +28,7 @@
             <input asp-for="User.Address" class="form-control" />
         </div>
 
-        <button type="submit" class="btn btn-primary" asp-page-handler="Save">Save Changes</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
     </form>
 
     <hr class="my-4" />
@@ -37,6 +37,71 @@
     @if (Model.User.Role == "Seller")
     {
         <p class="text-success">You are currently a <strong>Seller</strong>.</p>
+
+        <hr class="my-4" />
+        <h5>Ratings & Reviews</h5>
+
+        @if (Model.SellerRatings.Any())
+        {
+            <p>
+                Average Rating:
+                <strong>@Model.SellerRatings.Average(r => r.Rating).ToString("0.0")</strong>
+                <span class="review-stars">
+                    @{
+                        int fullStars = (int)Model.SellerRatings.Average(r => r.Rating);
+                        for (int i = 0; i < 5; i++)
+                        {
+                            @((i < fullStars) ? "★" : "☆")
+                        }
+                    }
+                </span>
+                (@Model.SellerRatings.Count review(s))
+            </p>
+
+            <div class="scrollable-reviews">
+                <ul class="list-group">
+                    @foreach (var review in Model.SellerRatings.Take(5))
+                    {
+                        <li class="list-group-item">
+                            <strong>@review.BuyerEmail</strong> rated:
+                            <span class="review-stars">
+                                @{
+                                    for (int i = 0; i < 5; i++)
+                                    {
+                                        @((i < review.Rating) ? "★" : "☆")
+                                    }
+                                }
+                            </span><br />
+                            <em class="review-comment">
+                                @{
+                                    var fullComment = review.Comment ?? "";
+                                    var isLong = fullComment.Length > 100;
+                                    var shortComment = isLong ? fullComment.Substring(0, 100) + "..." : fullComment;
+                                }
+                                <span class="short">@shortComment</span>
+                                @if (isLong)
+                                {
+                                    <span class="full d-none">@fullComment</span>
+                                    <span class="read-more-btn" onclick="toggleComment(this)">read more</span>
+                                }
+                            </em><br />
+                            <small class="text-muted">@review.CreatedAt.ToLocalTime().ToString("g")</small>
+                        </li>
+                    }
+                </ul>
+
+                <div class="pagination">
+                    <span class="page-btn">Prev</span>
+                    <span class="page-btn">1</span>
+                    <span class="page-btn">2</span>
+                    <span class="page-btn">Next</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">You have not received any ratings yet.</p>
+        }
     }
     else
     {
@@ -66,3 +131,22 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function toggleComment(btn) {
+            const li = btn.closest('li');
+            const short = li.querySelector('.short');
+            const full = li.querySelector('.full');
+            if (full.classList.contains('d-none')) {
+                full.classList.remove('d-none');
+                short.style.display = 'none';
+                btn.textContent = 'show less';
+            } else {
+                full.classList.add('d-none');
+                short.style.display = 'inline';
+                btn.textContent = 'read more';
+            }
+        }
+    </script>
+}

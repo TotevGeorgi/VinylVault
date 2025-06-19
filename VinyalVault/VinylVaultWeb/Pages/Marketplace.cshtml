@@ -1,4 +1,8 @@
 ﻿@page
+<div id="loadingOverlay">
+    <div class="spinner-vinyl"></div>
+</div>
+
 @model VinylVaultWeb.Pages.MarketplaceModel
 @{
     ViewData["Title"] = "Marketplace";
@@ -41,19 +45,21 @@
             <div id="suggestedSlider" class="popular-slider">
                 @foreach (var album in Model.RecommendedAlbums)
                 {
-                    <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@album.Id'">
-                        <img src="@album.CoverUrl" alt="@album.Name" />
-                        <h5>@album.Name</h5>
-                        <p>@album.Artist</p>
-                        @if (album.IsAvailable)
-                        {
-                            <div class="status available">✅ Available</div>
-                        }
-                        else
-                        {
-                            <div class="status unavailable">❌ Not Available</div>
-                        }
-                    </div>
+                    <a href="/VinylDetails?id=@album.Id" class="vinyl-card-link">
+                        <div class="vinyl-card">
+                            <img src="@album.CoverUrl" alt="@album.Name" />
+                            <h5>@album.Name</h5>
+                            <p>@album.Artist</p>
+                            @if (album.IsAvailable)
+                            {
+                                <div class="status available">✅ Available</div>
+                            }
+                            else
+                            {
+                                <div class="status unavailable">❌ Not Available</div>
+                            }
+                        </div>
+                    </a>
                 }
             </div>
             <button onclick="scrollSlider('suggestedSlider', 1)" class="arrow right">→</button>
@@ -70,7 +76,60 @@
             <div id="popularSlider" class="popular-slider">
                 @foreach (var album in Model.MostPopularAlbums)
                 {
-                    <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@album.Id'">
+                    <a href="/VinylDetails?id=@album.Id" class="vinyl-card-link">
+                        <div class="vinyl-card">
+                            <img src="@album.CoverUrl" alt="@album.Name" />
+                            <h5>@album.Name</h5>
+                            <p>@album.Artist</p>
+                            @if (album.IsAvailable)
+                            {
+                                <div class="status available">✅ Available</div>
+                            }
+                            else
+                            {
+                                <div class="status unavailable">❌ Not Available</div>
+                            }
+                        </div>
+                    </a>
+                }
+            </div>
+            <button onclick="scrollSlider('popularSlider', 1)" class="arrow right">→</button>
+        </div>
+    </div>
+}
+
+@if (Model.TopResult != null)
+{
+    <h3 class="mt-5">🎵 Most Popular Song Match</h3>
+    <div class="vinyl-grid">
+        <a href="/VinylDetails?id=@Model.TopResult.Id" class="vinyl-card-link">
+            <div class="vinyl-card">
+                <img src="@Model.TopResult.CoverUrl" alt="@Model.TopResult.Name" />
+                <h4>@Model.TopResult.Name</h4>
+                <p>@Model.TopResult.Artist</p>
+                <span class="tag song">Type: Song</span><br />
+                @if (Model.TopResult.IsAvailable)
+                {
+                    <div class="status available">✅ Available</div>
+                }
+                else
+                {
+                    <div class="status unavailable">❌ Not Available</div>
+                }
+            </div>
+        </a>
+    </div>
+}
+
+<div class="slider-container">
+    <h3>🆕 New Releases</h3>
+    <div class="slider-wrapper">
+        <button onclick="scrollSlider('newReleasesSlider', -1)" class="arrow left">←</button>
+        <div id="newReleasesSlider" class="popular-slider">
+            @foreach (var album in Model.NewReleases)
+            {
+                <a href="/VinylDetails?id=@album.Id" class="vinyl-card-link">
+                    <div class="vinyl-card">
                         <img src="@album.CoverUrl" alt="@album.Name" />
                         <h5>@album.Name</h5>
                         <p>@album.Artist</p>
@@ -83,54 +142,7 @@
                             <div class="status unavailable">❌ Not Available</div>
                         }
                     </div>
-                }
-            </div>
-            <button onclick="scrollSlider('popularSlider', 1)" class="arrow right">→</button>
-        </div>
-    </div>
-}
-
-@if (Model.TopResult != null)
-{
-    <h3 class="mt-5">🎵 Most Popular Song Match</h3>
-    <div class="vinyl-grid">
-        <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@Model.TopResult.Id'">
-            <img src="@Model.TopResult.CoverUrl" alt="@Model.TopResult.Name" />
-            <h4>@Model.TopResult.Name</h4>
-            <p>@Model.TopResult.Artist</p>
-            <span class="tag song">Type: Song</span><br />
-            @if (Model.TopResult.IsAvailable)
-            {
-                <div class="status available">✅ Available</div>
-            }
-            else
-            {
-                <div class="status unavailable">❌ Not Available</div>
-            }
-        </div>
-    </div>
-}
-
-<div class="slider-container">
-    <h3>🆕 New Releases</h3>
-    <div class="slider-wrapper">
-        <button onclick="scrollSlider('newReleasesSlider', -1)" class="arrow left">←</button>
-        <div id="newReleasesSlider" class="popular-slider">
-            @foreach (var album in Model.NewReleases)
-            {
-                <div class="vinyl-card" onclick="location.href='/VinylDetails?id=@album.Id'">
-                    <img src="@album.CoverUrl" alt="@album.Name" />
-                    <h5>@album.Name</h5>
-                    <p>@album.Artist</p>
-                    @if (album.IsAvailable)
-                    {
-                        <div class="status available">✅ Available</div>
-                    }
-                    else
-                    {
-                        <div class="status unavailable">❌ Not Available</div>
-                    }
-                </div>
+                </a>
             }
         </div>
         <button onclick="scrollSlider('newReleasesSlider', 1)" class="arrow right">→</button>
@@ -143,21 +155,23 @@
     <div class="vinyl-grid">
         @foreach (var item in Model.Albums)
         {
-            <div class="vinyl-card">
-                <img src="@item.Album.CoverUrl" alt="@item.Album.Name" />
-                <h4>@item.Album.Name</h4>
-                <p>@item.Album.Artist</p>
-                <span class="tag vinyl">Type: Vinyl</span><br />
-                @if (item.IsAvailable)
-                {
-                    <div class="status available">✅ Available</div>
-                    <a href="/VinylDetails?id=@item.Album.Id" class="btn btn-outline-success btn-sm mt-2">View Details</a>
-                }
-                else
-                {
-                    <div class="status unavailable">❌ Not Available</div>
-                }
-            </div>
+            <a href="/VinylDetails?id=@item.Album.Id" class="vinyl-card-link">
+                <div class="vinyl-card">
+                    <img src="@item.Album.CoverUrl" alt="@item.Album.Name" />
+                    <h4>@item.Album.Name</h4>
+                    <p>@item.Album.Artist</p>
+                    <span class="tag vinyl">Type: Vinyl</span><br />
+                    @if (item.IsAvailable)
+                    {
+                        <div class="status available">✅ Available</div>
+                        <button class="btn btn-outline-success btn-sm mt-2">View Details</button>
+                    }
+                    else
+                    {
+                        <div class="status unavailable">❌ Not Available</div>
+                    }
+                </div>
+            </a>
         }
     </div>
 }
@@ -169,25 +183,35 @@ else if (Model.TopResult == null)
 @section Scripts {
     <script>
         function scrollSlider(sliderId, direction) {
-            const slider = document.getElementById(sliderId);
-            const scrollAmount = 220;
-            slider.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+          const slider = document.getElementById(sliderId);
+          slider.scrollBy({ left: direction * 220, behavior: 'smooth' });
         }
-
         function selectAllGenres() {
-            const select = document.getElementById("genreSelect");
-            for (let i = 0; i < select.options.length; i++) {
-                select.options[i].selected = true;
-            }
-            select.form.submit();
+          const select = document.getElementById("genreSelect");
+          for (let i = 0; i < select.options.length; i++)
+            select.options[i].selected = true;
+          select.form.submit();
+        }
+        function clearGenres() {
+          const select = document.getElementById("genreSelect");
+          for (let i = 0; i < select.options.length; i++)
+            select.options[i].selected = false;
+          select.form.submit();
         }
 
-        function clearGenres() {
-            const select = document.getElementById("genreSelect");
-            for (let i = 0; i < select.options.length; i++) {
-                select.options[i].selected = false;
-            }
-            select.form.submit();
-        }
+          document.addEventListener("DOMContentLoaded", () => {
+          const overlay = document.getElementById("loadingOverlay");
+          const show = () => overlay.style.display = "flex";
+
+          document.querySelector("form.mb-4")
+                  .addEventListener("submit", show);
+
+          document.querySelectorAll(".vinyl-card-link")
+                  .forEach(a => a.addEventListener("click", show));
+
+          document.querySelectorAll("nav a.nav-link, nav a.navbar-brand")
+                  .forEach(a => a.addEventListener("click", show));
+        });
     </script>
 }
+

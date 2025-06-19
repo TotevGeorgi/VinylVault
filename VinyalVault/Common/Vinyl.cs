@@ -17,5 +17,7 @@ namespace Common
         public string ImagePath { get; set; }
         public string SellerEmail { get; set; }
         public string Status { get; set; } = "Available";
+        public decimal Price { get; set; }
+        public DateTime DateAdded { get; set; }
     }
 }

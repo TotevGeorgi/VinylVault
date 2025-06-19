@@ -1,81 +1,128 @@
 ﻿using Common.DTOs;
+using Common.Repositories;
 using CoreLayer.Services;
-using DataLayer;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-public class CacheService : ICacheService
+namespace CoreLayer.Services
 {
-    private readonly DBCashMarket _dbCashMarket;
-    private readonly ISpotifyAlbumService _spotify;
-    private readonly Dictionary<string, (List<SpotifyAlbumPreview> albums, DateTime updated)> _userRecCache = new();
-    private readonly TimeSpan _recExpiry = TimeSpan.FromHours(24);
-    private readonly IOrderService _orderService;
-    private readonly IWishlistService _wishlistService;
-
-    public CacheService(DBCashMarket dbCashMarket, ISpotifyAlbumService spotify, IOrderService orderService, IWishlistService wishlistService)
+    public class CacheService : ICacheService
     {
-        _dbCashMarket = dbCashMarket;
-        _spotify = spotify;
-        _orderService = orderService;
-        _wishlistService = wishlistService;
-    }
+        private readonly ICacheRepository _cacheRepository;
+        private readonly ISpotifyAlbumService _spotify;
+        private readonly IVinylService _vinylService;
 
-    public async Task<List<SpotifyAlbumPreview>> GetCachedOrFreshAsync(string albumType)
-    {
-        if (await _dbCashMarket.IsCacheExpiredAsync(albumType))
+        public CacheService(
+            ICacheRepository cacheRepository,
+            ISpotifyAlbumService spotify,
+            IVinylService vinylService)
         {
-            List<SpotifyAlbumPreview> freshData = albumType switch
-            {
-                "popular" => await _spotify.GetMostPopularAlbumsAsync(),
-                "new" => await _spotify.GetNewReleasesAsync(),
-                _ => new List<SpotifyAlbumPreview>()
-            };
-
-            var toSave = freshData.Select(a => new PopularRelease
-            {
-                AlbumId = a.Id,
-                Name = a.Name,
-                Artist = a.Artist,
-                Cover = a.CoverUrl,
-                ReleaseDate = a.ReleaseDate ?? DateTime.UtcNow,
-                PopularityScore = a.Popularity,
-                AlbumType = albumType,
-                LastUpdated = DateTime.UtcNow
-            }).ToList();
-
-            await _dbCashMarket.SaveReleasesAsync(toSave);
+            _cacheRepository = cacheRepository;
+            _spotify = spotify;
+            _vinylService = vinylService;
         }
 
-        var cached = await _dbCashMarket.GetCachedReleasesAsync(albumType);
-
-        return cached.Select(c => new SpotifyAlbumPreview
+        public async Task<List<SpotifyAlbumPreview>> GetCachedOrFreshAsync(
+            string albumType, int pageNumber, int pageSize)
         {
-            Id = c.AlbumId,
-            Name = c.Name,
-            Artist = c.Artist,
-            CoverUrl = c.Cover,
-            ReleaseDate = c.ReleaseDate, 
-            Popularity = c.PopularityScore
-        }).ToList();
-    }
-    public async Task<List<SpotifyAlbumPreview>> GetCachedRecommendationsAsync(string userEmail)
-    {
-        if (_userRecCache.TryGetValue(userEmail, out var entry))
-        {
-            if ((DateTime.UtcNow - entry.updated) < _recExpiry)
+            if (await _cacheRepository.IsCacheExpiredAsync(albumType))
             {
-                return entry.albums;
+                var freshData = albumType switch
+                {
+                    "popular" => await _spotify.GetMostPopularAlbumsAsync(),
+                    "new" => await _spotify.GetNewReleasesAsync(),
+                    _ => new List<SpotifyAlbumPreview>()
+                };
+
+                var toSave = new List<PopularRelease>();
+                foreach (var a in freshData)
+                {
+                    var isAvailable = await _vinylService.IsAlbumAvailable(a.Id);
+                    toSave.Add(new PopularRelease
+                    {
+                        AlbumId = a.Id,
+                        Name = a.Name,
+                        Artist = a.Artist,
+                        Cover = a.CoverUrl,
+                        ReleaseDate = a.ReleaseDate ?? DateTime.UtcNow,
+                        PopularityScore = a.Popularity,
+                        AlbumType = albumType,
+                        LastUpdated = DateTime.UtcNow,
+                        IsAvailable = isAvailable
+                    });
+                }
+
+                await _cacheRepository.SaveReleasesAsync(toSave);
             }
+
+            var cached = await _cacheRepository.GetCachedReleasesAsync(
+                albumType, pageNumber, pageSize);
+
+            return cached.Select(c => new SpotifyAlbumPreview
+            {
+                Id = c.AlbumId,
+                Name = c.Name,
+                Artist = c.Artist,
+                CoverUrl = c.Cover,
+                ReleaseDate = c.ReleaseDate,
+                Popularity = c.PopularityScore,
+                IsAvailable = c.IsAvailable
+            }).ToList();
         }
 
-        var fresh = await _spotify.GetRecommendedAlbumsAsync(userEmail, _orderService, _wishlistService);
+        public async Task<List<SpotifyAlbumPreview>> GetCachedSearchAsync(
+            string query, int pageNumber, int pageSize)
+        {
+            if (await _cacheRepository.IsSearchCacheExpiredAsync(query))
+            {
+                var freshData = await _spotify.SearchAlbumPreviewsAsync(query);
 
-        _userRecCache[userEmail] = (fresh, DateTime.UtcNow);
-        return fresh;
-    }
+                var toSave = new List<PopularRelease>();
+                foreach (var a in freshData)
+                {
+                    var isAvailable = await _vinylService.IsAlbumAvailable(a.Id);
+                    toSave.Add(new PopularRelease
+                    {
+                        AlbumId = a.Id,
+                        Name = a.Name,
+                        Artist = a.Artist,
+                        Cover = a.CoverUrl,
+                        ReleaseDate = a.ReleaseDate ?? DateTime.UtcNow,
+                        PopularityScore = a.Popularity,
+                        AlbumType = "search",
+                        LastUpdated = DateTime.UtcNow,
+                        IsAvailable = isAvailable,
+                        Query = query
+                    });
+                }
 
-    public Task InvalidateUserRecommendationsAsync(string userEmail)
-    {
-        _userRecCache.Remove(userEmail);
-        return Task.CompletedTask;
+                await _cacheRepository.SaveSearchResultsAsync(query, toSave);
+            }
+
+            var cached = await _cacheRepository.GetCachedSearchResultsAsync(
+                query, pageNumber, pageSize);
+
+            return cached.Select(c => new SpotifyAlbumPreview
+            {
+                Id = c.AlbumId,
+                Name = c.Name,
+                Artist = c.Artist,
+                CoverUrl = c.Cover,
+                ReleaseDate = c.ReleaseDate,
+                Popularity = c.PopularityScore,
+                IsAvailable = c.IsAvailable
+            }).ToList();
+        }
+
+        public Task<List<SpotifyAlbumPreview>> GetCachedRecommendationsAsync(
+            Guid userId, int pageNumber, int pageSize)
+        {
+            return Task.FromResult(new List<SpotifyAlbumPreview>());
+        }
+
+        public Task InvalidateUserRecommendationsAsync(string userEmail)
+            => Task.CompletedTask;
     }
 }

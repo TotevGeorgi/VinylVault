@@ -1,12 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using CoreLayer;
 using CoreLayer.Services;
-using Common.DTOs;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Common;
-using CoreLayer;
-using Microsoft.AspNetCore.Authorization;
 
 namespace VinylVaultWeb.Pages
 {
@@ -16,43 +16,64 @@ namespace VinylVaultWeb.Pages
         private readonly IVinylService _vinylService;
         private readonly IUserService _userService;
 
-        public List<Vinyl> Vinyls { get; set; }
-        public string? SuccessMessage { get; set; }
-
         public ListedItemsModel(IVinylService vinylService, IUserService userService)
         {
             _vinylService = vinylService;
             _userService = userService;
         }
 
+        [BindProperty(SupportsGet = true)]
+        public string Tab { get; set; } = "active";         
+
+        [BindProperty(SupportsGet = true)]
+        public string SortBy { get; set; } = "dateDesc";    
+
+        public List<Vinyl> ActiveVinyls { get; set; } = new();
+        public List<Vinyl> SoldVinyls { get; set; } = new();
+        public string? SuccessMessage { get; set; }
+
         public async Task<IActionResult> OnGetAsync()
         {
-            string? email = HttpContext.User.Identity?.Name;
+            var email = User.Identity?.Name;
             var user = await _userService.GetUserByEmail(email);
-
-            if (user == null || user.Role != "Seller")
-            {
+            if (user?.Role != "Seller")
                 return RedirectToPage("/LogIn");
+
+            var all = await _vinylService.GetVinylsBySeller(user.Email);
+
+            ActiveVinyls = all.Where(v => v.Status != "Sold").ToList();
+            SoldVinyls = all.Where(v => v.Status == "Sold").ToList();
+
+            void ApplySort(List<Vinyl> list)
+            {
+                switch (SortBy)
+                {
+                    case "priceAsc":
+                        list.Sort((a, b) => a.Price.CompareTo(b.Price));
+                        break;
+                    case "priceDesc":
+                        list.Sort((a, b) => b.Price.CompareTo(a.Price));
+                        break;
+                    case "dateDesc":
+                    default:
+                        list.Sort((a, b) => b.DateAdded.CompareTo(a.DateAdded));
+                        break;
+                }
             }
 
-            Vinyls = await _vinylService.GetVinylsBySeller(user.Email);
+            ApplySort(ActiveVinyls);
+            ApplySort(SoldVinyls);
+
             return Page();
         }
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
-            bool isDeleted = await _vinylService.DeleteVinyl(id);
-
-            if (isDeleted)
-            {
-                SuccessMessage = "Vinyl removed successfully.";
-            }
-            else
-            {
-                SuccessMessage = "Failed to remove vinyl.";
-            }
-
-            return RedirectToPage();
+            var ok = await _vinylService.DeleteVinyl(id);
+            SuccessMessage = ok
+                ? "Vinyl removed successfully."
+                : "Failed to remove vinyl.";
+            return RedirectToPage(new { Tab, SortBy });
         }
     }
 }

@@ -3,6 +3,7 @@ using CoreLayer;
 using CoreLayer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -12,9 +13,6 @@ namespace VinylVaultWeb.Pages
 {
     public class MarketplaceModel : PageModel
     {
-        private readonly ISpotifyAlbumService _albumService;
-        private readonly IOrderService _orderService;
-        private readonly IWishlistService _wishlistService;
         private readonly ICacheService _cacheService;
 
         public List<SpotifyAlbumPreview> RecommendedAlbums { get; set; } = new();
@@ -27,75 +25,50 @@ namespace VinylVaultWeb.Pages
         public string Query { get; set; } = "";
 
         [BindProperty(SupportsGet = true)]
+        public int PageNumber { get; set; } = 1;
+
+        public int PageSize { get; set; } = 10;
+
+        [BindProperty(SupportsGet = true)]
         public string SortBy { get; set; } = "popular";
 
         [BindProperty(SupportsGet = true)]
         public List<string> Genres { get; set; } = new();
 
-        public List<string> AvailableGenres { get; set; } = new();
-
-        public MarketplaceModel(
-            ISpotifyAlbumService albumService,
-            IOrderService orderService,
-            IWishlistService wishlistService,
-            ICacheService cacheService)
+        public List<string> AvailableGenres { get; set; } = new()
         {
-            _albumService = albumService;
-            _orderService = orderService;
-            _wishlistService = wishlistService;
+            "Pop", "Rock", "Jazz", "Hip-Hop", "Classical", "Electronic"
+        };
+
+        private Guid? CurrentUserId => User?.Identity?.IsAuthenticated == true
+            ? Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value)
+            : null;
+
+        public MarketplaceModel(ICacheService cacheService)
+        {
             _cacheService = cacheService;
         }
 
-        public async Task OnGetAsync()
+        public async Task<IActionResult> OnGetAsync()
         {
-            AvailableGenres = new List<string> { "Pop", "Rock", "Jazz", "Hip-Hop", "Electronic", "Funk", "Disco", "Country" };
-
-            if (string.IsNullOrWhiteSpace(Query))
+            if (!string.IsNullOrWhiteSpace(Query))
             {
-                var userEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                if (!string.IsNullOrWhiteSpace(userEmail))
-                {
-                    RecommendedAlbums = await _cacheService.GetCachedRecommendationsAsync(userEmail);
-                }
-
-                NewReleases = await _cacheService.GetCachedOrFreshAsync("new");
-
-                MostPopularAlbums = Genres.Any()
-                    ? await _albumService.GetPopularAlbumsByGenresAsync(Genres)
-                    : await _cacheService.GetCachedOrFreshAsync("popular");
-
-                TopResult = null;
-                Albums.Clear();
+                var results = await _cacheService.GetCachedSearchAsync(Query, PageNumber, PageSize);
+                TopResult = results.FirstOrDefault();
+                Albums = results.Skip(1)
+                            .Select(a => new AlbumAvailability { Album = a, IsAvailable = a.IsAvailable })
+                            .ToList();
             }
-            else
-            {
-                (TopResult, var searchResults) = await _albumService.SearchSmartAsync(Query);
 
-                if (Genres.Any())
-                {
-                    searchResults = searchResults
-                        .Where(a => a.Genres != null && a.Genres.Any(g => Genres.Contains(g, System.StringComparer.OrdinalIgnoreCase)))
-                        .ToList();
-                }
+            MostPopularAlbums = await _cacheService.GetCachedOrFreshAsync("popular", PageNumber, PageSize);
+            NewReleases = await _cacheService.GetCachedOrFreshAsync("new", PageNumber, PageSize);
 
-                searchResults = SortBy switch
-                {
-                    "newest" => searchResults.OrderByDescending(a => a.ReleaseDate).ToList(),
-                    "mostlistened" => searchResults.OrderByDescending(a => a.Popularity).ToList(),
-                    _ => searchResults
-                };
+            if (CurrentUserId.HasValue)
+                RecommendedAlbums = await _cacheService.GetCachedRecommendationsAsync(
+                    CurrentUserId.Value, PageNumber, PageSize);
 
-                Albums = searchResults.Select(a => new AlbumAvailability
-                {
-                    Album = a,
-                    IsAvailable = a.IsAvailable
-                }).ToList();
-
-                MostPopularAlbums.Clear();
-                NewReleases.Clear();
-                RecommendedAlbums.Clear();
-            }
+            return Page();
         }
     }
 }
+

@@ -3,30 +3,25 @@ using CoreLayer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace VinylVaultWeb.Pages
 {
     public class OrderHistoryModel : PageModel
     {
-        private readonly IOrderService _orderService;
-
+        private readonly IOrderService _orders;
         public List<OrderDTO> Orders { get; set; } = new();
 
-        public OrderHistoryModel(IOrderService orderService)
-        {
-            _orderService = orderService;
-        }
+        public OrderHistoryModel(IOrderService orders) => _orders = orders;
 
         public async Task<IActionResult> OnGetAsync()
         {
-            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userId))
-            {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
                 return RedirectToPage("/LogIn");
-            }
 
-            Orders = await _orderService.GetOrdersByUser(userId);
+            Orders = await _orders.GetOrdersByUser(email);
             return Page();
         }
     }

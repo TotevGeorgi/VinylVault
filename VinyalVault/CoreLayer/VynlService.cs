@@ -50,6 +50,10 @@ namespace CoreLayer
         {
             return await _dbVinyl.UpdateStatus(vinylId, "Sold");
         }
+        public async Task<Vinyl?> GetVinylById(int id)
+        {
+            return await _dbVinyl.GetVinylById(id);
+        }
 
         public async Task<SpotifyAlbumDetails> GetAlbumDetailsByIdAsync(string albumId)
         {
@@ -59,6 +63,20 @@ namespace CoreLayer
         {
             var vinyls = await _dbVinyl.GetVinylsByAlbumIdAndStatus(albumId, "Available");
             return vinyls.Any();
+        }
+        public async Task<List<AlbumAvailability>> AddAvailabilityToAlbumsAsync(List<SpotifyAlbumPreview> albums)
+        {
+            var tasks = albums.Select(async album =>
+            {
+                bool available = await IsAlbumAvailable(album.Id);
+                return new AlbumAvailability
+                {
+                    Album = album,
+                    IsAvailable = available
+                };
+            });
+
+            return (await Task.WhenAll(tasks)).ToList();
         }
 
     }

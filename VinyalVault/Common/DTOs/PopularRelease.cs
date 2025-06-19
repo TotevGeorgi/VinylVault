@@ -16,9 +16,10 @@ namespace Common.DTOs
         public string Cover { get; set; } = string.Empty;
         public DateTime ReleaseDate { get; set; }
         public int PopularityScore { get; set; }
-        public string AlbumType { get; set; } = string.Empty; 
+        public string AlbumType { get; set; } = string.Empty;
         public DateTime LastUpdated { get; set; }
         public bool IsAvailable { get; set; } = false;
+        public string? Query { get; set; }
 
     }
 }

@@ -1,5 +1,6 @@
 using Common;
 using Common.DTOs;
+using CoreLayer;
 using CoreLayer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,36 +12,51 @@ namespace VinylVaultWeb.Pages
     public class ProfileModel : PageModel
     {
         private readonly IUserService _userService;
+        private readonly IRatingService _ratingService;
+        private readonly IVinylService _vinylService;
 
         [BindProperty(SupportsGet = true)]
-        public Person User { get; set; }
+        public Person User { get; set; } = new();
 
-        public string? SuccessMessage { get; set; }
+        public string? Message { get; set; }
 
-        public ProfileModel(IUserService userService)
+        public List<SellerRatingDTO> SellerRatings { get; set; } = new();
+
+        public List<Vinyl> SellerVinyls { get; set; } = new();
+
+        public ProfileModel(IUserService userService, IRatingService ratingService, IVinylService vinylService)
         {
             _userService = userService;
+            _ratingService = ratingService;
+            _vinylService = vinylService;
         }
 
-        public async Task<IActionResult> OnGetAsync()  
+        public async Task<IActionResult> OnGetAsync()
         {
             string? email = HttpContext.User.Identity?.Name;
             if (string.IsNullOrEmpty(email)) return RedirectToPage("/LogIn");
 
-            var userFromDb = await _userService.GetUserByEmail(email);  
+            var userFromDb = await _userService.GetUserByEmail(email);
             if (userFromDb == null) return RedirectToPage("/LogIn");
 
-            User = userFromDb;  
+            User = userFromDb;
+
+            if (User.Role == "Seller")
+            {
+                SellerRatings = await _ratingService.GetRatingsForSellerAsync(User.Email);
+                SellerVinyls = await _vinylService.GetVinylsBySeller(User.Email);
+            }
+
             return Page();
         }
 
-        public async Task<IActionResult> OnPostSaveAsync() 
+        public async Task<IActionResult> OnPostSaveAsync()
         {
             string? email = HttpContext.User.Identity?.Name;
             if (string.IsNullOrEmpty(email)) return RedirectToPage("/LogIn");
 
-             _userService.UpdateUserProfile(email, User.FullName, User.Address);  
-            SuccessMessage = "Profile updated successfully.";
+            _userService.UpdateUserProfile(email, User.FullName, User.Address);
+            Message = "Profile updated successfully.";
             return RedirectToPage();
         }
 
@@ -49,7 +65,7 @@ namespace VinylVaultWeb.Pages
             string? email = HttpContext.User.Identity?.Name;
             if (string.IsNullOrEmpty(email)) return RedirectToPage("/LogIn");
 
-            await _userService.UpgradeToSeller(email);  
+            await _userService.UpgradeToSeller(email);
             return RedirectToPage();
         }
     }

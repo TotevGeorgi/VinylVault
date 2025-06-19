@@ -1,16 +1,54 @@
 ﻿@page
 @model VinylVaultWeb.Pages.ListedItemsModel
 @{
-    ViewData["Title"] = "Listed Items";
+    ViewData["Title"] = "My Listed Vinyls";
 }
 
-<h2>My Listed Vinyls</h2>
+<h2>@ViewData["Title"]</h2>
 
 @if (Model.SuccessMessage != null)
 {
-    <div class="alert alert-success">
-        @Model.SuccessMessage
-    </div>
+    <div class="alert alert-success">@Model.SuccessMessage</div>
+}
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab=="active"?"active":"")"
+           asp-route-Tab="active"
+           asp-route-SortBy="@Model.SortBy">
+            Active (@Model.ActiveVinyls.Count)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab=="sold"?"active":"")"
+           asp-route-Tab="sold"
+           asp-route-SortBy="@Model.SortBy">
+            Sold (@Model.SoldVinyls.Count)
+        </a>
+    </li>
+</ul>
+
+<form method="get" class="mb-3">
+    <input type="hidden" name="Tab" value="@Model.Tab" />
+    <label>Sort by:</label>
+    <select name="SortBy" onchange="this.form.submit()"
+            class="form-select w-auto d-inline-block ms-2">
+        <option value="dateDesc" selected="@(Model.SortBy=="dateDesc")">
+            Date Added ↓
+        </option>
+        <option value="priceAsc" selected="@(Model.SortBy=="priceAsc")">
+            Price ↑
+        </option>
+        <option value="priceDesc" selected="@(Model.SortBy=="priceDesc")">
+            Price ↓
+        </option>
+    </select>
+</form>
+
+@{
+    var list = Model.Tab == "sold"
+             ? Model.SoldVinyls
+             : Model.ActiveVinyls;
 }
 
 <table class="table">
@@ -20,21 +58,36 @@
             <th>Artist</th>
             <th>Condition</th>
             <th>Description</th>
+            <th>Price</th>
             <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var vinyl in Model.Vinyls)
+        @foreach (var v in list)
         {
-            <tr>
-                <td>@vinyl.Title</td>
-                <td>@vinyl.Artist</td>
-                <td>@vinyl.Condition</td>
-                <td>@vinyl.Description</td>
+            var rowClass = v.Status == "Sold" ? "table-secondary" : "";
+            <tr class="@rowClass">
+                <td>@v.Title</td>
+                <td>@v.Artist</td>
+                <td>@v.Condition</td>
+                <td>@v.Description</td>
+                <td>@v.Price.ToString("C")</td>
                 <td>
-                    <a href="@Url.Page("/UpdateVinyl", new { id = vinyl.Id })" class="btn btn-warning btn-sm">Edit</a>
-                    <form method="post" asp-page-handler="Delete" asp-route-id="@vinyl.Id" class="d-inline">
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    <a asp-page="/EditVinyl"
+                       asp-route-id="@v.Id"
+                       class="btn btn-warning btn-sm"
+                       disabled="@(v.Status=="Sold")">
+                        Edit
+                    </a>
+                    <form method="post"
+                          asp-page-handler="Delete"
+                          asp-route-id="@v.Id"
+                          class="d-inline">
+                        <button type="submit"
+                                class="btn btn-danger btn-sm"
+                                disabled="@(v.Status=="Sold")">
+                            Delete
+                        </button>
                     </form>
                 </td>
             </tr>
@@ -42,4 +95,6 @@
     </tbody>
 </table>
 
-<a href="/SellVinyl" class="btn btn-primary">Add New Vinyl</a>
+<a asp-page="/SellVinyl" class="btn btn-primary">
+    Add New Vinyl
+</a>

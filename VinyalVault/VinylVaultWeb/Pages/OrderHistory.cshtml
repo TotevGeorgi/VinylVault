@@ -3,27 +3,32 @@
 @{
     ViewData["Title"] = "Order History";
 }
-
 <div class="container mt-5">
     <h2 class="text-center mb-4">Your Order History</h2>
 
-    @if (Model.Orders != null && Model.Orders.Any())
+    @if (Model.Orders.Any())
     {
         <table class="table table-bordered table-striped">
             <thead class="thead-dark">
                 <tr>
-                    <th>Order ID</th>
-                    <th>Vinyl ID</th>
+                    <th>Cover</th>
+                    <th>Title</th>
+                    <th>Artist</th>
+                    <th>Price</th>
                     <th>Purchase Date</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var order in Model.Orders)
+                @foreach (var o in Model.Orders)
                 {
                     <tr>
-                        <td>@order.Id</td>
-                        <td>@order.VinylId</td>
-                        <td>@order.PurchaseDate.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>
+                            <img src="@o.CoverUrl" width="50" />
+                        </td>
+                        <td>@o.Title</td>
+                        <td>@o.Artist</td>
+                        <td>@o.Price.ToString("C")</td>
+                        <td>@o.PurchaseDate.ToString("yyyy-MM-dd HH:mm")</td>
                     </tr>
                 }
             </tbody>
@@ -32,7 +37,7 @@
     else
     {
         <div class="alert alert-info text-center">
-            You haven't purchased any vinyls yet.
+            You haven’t purchased anything yet.
         </div>
     }
 </div>

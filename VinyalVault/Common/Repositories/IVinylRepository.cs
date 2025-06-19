@@ -8,6 +8,7 @@ namespace Common.Repositories
 {
     public interface IVinylRepository
     {
+        Task<Vinyl?> GetVinylById(int id);
         Task<bool> SaveVinyl(Vinyl vinyl);
         Task<List<Vinyl>> GetVinylsBySeller(string sellerEmail);
         Task<bool> DeleteVinyl(int id);

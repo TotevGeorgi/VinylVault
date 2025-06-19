@@ -9,8 +9,10 @@ namespace CoreLayer.Services
 {
     public interface ICacheService
     {
-        Task<List<SpotifyAlbumPreview>> GetCachedOrFreshAsync(string albumType);
-        Task<List<SpotifyAlbumPreview>> GetCachedRecommendationsAsync(string userEmail);
+        Task<List<SpotifyAlbumPreview>> GetCachedOrFreshAsync(string albumType, int pageNumber, int pageSize);
+        Task<List<SpotifyAlbumPreview>> GetCachedSearchAsync(string query, int pageNumber, int pageSize);
+        Task<List<SpotifyAlbumPreview>> GetCachedRecommendationsAsync(Guid userId, int pageNumber, int pageSize);
         Task InvalidateUserRecommendationsAsync(string userEmail);
     }
+
 }

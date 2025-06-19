@@ -41,8 +41,11 @@ builder.Services.AddScoped<IWishlistService, WishlistService>();
 builder.Services.AddHttpClient<IGenreService, SpotifyGenreService>();
 builder.Services.AddHttpClient<ISpotifyAlbumService, SpotifyAlbumService>();
 
-builder.Services.AddSingleton<DBCashMarket>();
+builder.Services.AddSingleton<ICacheRepository, DbCacheMarket>();
 builder.Services.AddScoped<ICacheService, CacheService>();
+
+builder.Services.AddScoped<IRatingRepository, DBRating>();
+builder.Services.AddScoped<IRatingService, RatingService>();
 
 
 var app = builder.Build();

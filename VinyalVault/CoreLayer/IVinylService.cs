@@ -10,6 +10,7 @@ namespace CoreLayer
 {
     public interface IVinylService
     {
+        Task<Vinyl?> GetVinylById(int id);
         Task<bool> UploadVinyl(Vinyl vinyl);
         Task<List<Vinyl>> GetVinylsBySeller(string sellerEmail);
         Task<bool> DeleteVinyl(int id);
@@ -18,6 +19,8 @@ namespace CoreLayer
         Task<bool> MarkAsSold(int vinylId);
         Task<SpotifyAlbumDetails> GetAlbumDetailsByIdAsync(string albumId);
         Task<bool> IsAlbumAvailable(string albumId);
+        Task<List<AlbumAvailability>> AddAvailabilityToAlbumsAsync(List<SpotifyAlbumPreview> albums);
+
 
 
     }

@@ -11,32 +11,131 @@
     <div class="alert alert-success">@Model.Message</div>
 }
 
-@if (Model.Sellers != null && Model.Sellers.Any())
+<form method="get" class="mb-3">
+    <input type="hidden" name="AlbumId" value="@Model.AlbumId" />
+
+    <label>Sort by:</label>
+    <select asp-for="SortBy"
+            class="form-select w-auto d-inline-block ms-2"
+            onchange="this.form.submit()">
+        <option value="priceAsc">Price: Low → High</option>
+        <option value="priceDesc">Price: High → Low</option>
+        <option value="rating">Rating ↓</option>
+    </select>
+</form>
+
+@if (Model.Sellers.Any())
 {
     <form method="post">
-        <div class="form-group">
-            <label>Select a Seller:</label>
-            <div class="seller-list">
-                @foreach (var vinyl in Model.Sellers)
-                {
-                    <label class="seller-card">
-                        <input type="radio" name="SelectedVinylId" value="@vinyl.Id" required />
-                        <div class="seller-content">
-                            <img src="@vinyl.ImagePath" alt="Vinyl Image" width="100" />
-                            <div>
-                                <strong>@vinyl.SellerEmail</strong><br />
-                                Condition: @vinyl.Condition<br />
-                                @vinyl.Description
-                            </div>
+        <input type="hidden" asp-for="AlbumId" />
+        <input type="hidden" asp-for="SortBy" />
+
+        <div class="seller-list">
+            @foreach (var vinyl in Model.Sellers)
+            {
+                <label class="seller-card d-inline-block m-2 p-3 border rounded">
+                    <input type="radio"
+                           asp-for="SelectedVinylId"
+                           value="@vinyl.Id"
+                           required />
+                    <div class="d-flex align-items-center">
+                        <img src="@vinyl.ImagePath"
+                             alt="Vinyl Image"
+                             width="100" class="me-3" />
+                        <div>
+                            <strong>@vinyl.SellerEmail</strong><br />
+
+                            Rating:
+                            @(
+                                Model.SellerRatings
+                                .GetValueOrDefault(vinyl.SellerEmail, 0)
+                                .ToString("0.0")
+                                ) ⭐<br />
+
+                            Price: @vinyl.Price.ToString("C")<br />
+
+                            Condition: @vinyl.Condition<br />
+                            @vinyl.Description
                         </div>
-                    </label>
-                }
-            </div>
+                    </div>
+                </label>
+            }
         </div>
-        <button type="submit" class="btn btn-primary mt-3">Confirm Purchase</button>
+
+        <button type="submit" class="btn btn-primary mt-3">
+            Confirm Purchase
+        </button>
     </form>
 }
 else
 {
-    <div class="alert alert-warning">No available sellers for this vinyl.</div>
+    <div class="alert alert-warning">
+        No available sellers for this vinyl.
+    </div>
+}
+
+<div class="modal fade" id="ratingModal" tabindex="-1"
+     aria-labelledby="ratingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" asp-page-handler="SubmitRating">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ratingModalLabel">
+                        Rate the Seller
+                    </h5>
+                    <button type="button" class="btn-close"
+                            data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input asp-for="SelectedVinylId" type="hidden" />
+                    <input asp-for="SellerEmail" type="hidden" />
+
+                    <div class="mb-3">
+                        <label asp-for="RatingScore" class="form-label">Rating</label>
+                        <select asp-for="RatingScore"
+                                class="form-select" required>
+                            <option value="">Select Rating</option>
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <option value="@i">@i ⭐</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="RatingComment" class="form-label">
+                            Comment (optional)
+                        </label>
+                        <textarea asp-for="RatingComment"
+                                  class="form-control"
+                                  maxlength="500"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">
+                        Submit Rating
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+          const show = @Html.Raw(
+        System.Text.Json.JsonSerializer.Serialize(
+        !string.IsNullOrEmpty(Model.Message)
+        && !string.IsNullOrEmpty(Model.SellerEmail)
+        && Model.SelectedVinylId > 0
+        )
+      );
+          if (show) {
+            new bootstrap.Modal(
+              document.getElementById("ratingModal")
+            ).show();
+          }
+        });
+    </script>
 }

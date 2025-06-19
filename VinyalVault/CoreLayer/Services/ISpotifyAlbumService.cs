@@ -6,8 +6,7 @@ namespace CoreLayer.Services
 {
     public interface ISpotifyAlbumService
     {
-        Task<List<SpotifyAlbumPreview>> SearchAlbumsAsync(string query);
-        Task<List<SpotifyAlbumPreview>> SearchAlbumsByTrackAsync(string trackQuery);    
+        Task<List<SpotifyAlbumPreview>> SearchAlbumPreviewsAsync(string query, int limit = 12);
         Task<SpotifyAlbumDetails> GetAlbumDetailsAsync(string albumId);
         Task<(SpotifyAlbumPreview TopTrackAlbum, List<SpotifyAlbumPreview> AlbumMatches)> SearchSmartAsync(string query);
         Task<List<SpotifyAlbumPreview>> GetMostPopularAlbumsAsync();
