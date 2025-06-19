@@ -20,8 +20,5 @@ namespace CoreLayer
         Task<SpotifyAlbumDetails> GetAlbumDetailsByIdAsync(string albumId);
         Task<bool> IsAlbumAvailable(string albumId);
         Task<List<AlbumAvailability>> AddAvailabilityToAlbumsAsync(List<SpotifyAlbumPreview> albums);
-
-
-
     }
 }
