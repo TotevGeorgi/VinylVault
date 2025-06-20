@@ -45,7 +45,6 @@ namespace UnitTest
         [Fact]
         public async Task GetRecommendationsAsync_FiltersOutKnownIds()
         {
-            // Arrange
             _wish.Setup(w => w.GetAlbumIdsInWishlist("u"))
                  .ReturnsAsync(new List<string> { "X" });
             _order.Setup(o => o.GetOrdersByUser("u"))

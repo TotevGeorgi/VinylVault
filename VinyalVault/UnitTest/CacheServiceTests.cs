@@ -18,6 +18,7 @@ namespace UnitTest
         private readonly Mock<ICacheRepository> _cacheRepo = new();
         private readonly Mock<ISpotifyAlbumService> _spotify = new();
         private readonly Mock<IVinylService> _vinyl = new();
+        private readonly int max = 20;
 
         public CacheServiceTests()
         {
@@ -46,7 +47,7 @@ namespace UnitTest
                             }
                         });
 
-            _spotify.Setup(s => s.GetMostPopularAlbumsAsync())
+            _spotify.Setup(s => s.GetMostPopularAlbumsAsync(max))
                     .ReturnsAsync(new List<SpotifyAlbumPreview>());
             _vinyl.Setup(v => v.IsAlbumAvailable(It.IsAny<string>()))
                   .ReturnsAsync(true);
