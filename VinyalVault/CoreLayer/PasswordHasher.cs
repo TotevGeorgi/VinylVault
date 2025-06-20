@@ -7,19 +7,18 @@ using System.Threading.Tasks;
 
 namespace CoreLayer
 {
-    public static class PasswordHasher
+    public class PasswordHasher : IPasswordHasher
     {
-        public static string Hash(string password)
+        public string Hash(string password)
         {
             using var sha256 = SHA256.Create();
-            byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
             return Convert.ToBase64String(bytes);
         }
 
-        public static bool Verify(string inputPassword, string storedHash)
+        public bool Verify(string plainPassword, string hashedPassword)
         {
-            string hashedInput = Hash(inputPassword);
-            return hashedInput == storedHash;
+            return Hash(plainPassword) == hashedPassword;
         }
     }
 }

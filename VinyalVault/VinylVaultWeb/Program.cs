@@ -1,14 +1,13 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using CoreLayer.Services;
-using CoreLayer;
 using DataLayer;
-using Common;
 using Common.Repositories;
+using CoreLayer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,32 +20,38 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     });
-
 builder.Services.AddAuthorization();
 builder.Services.AddSession();
 builder.Services.AddRazorPages();
 
 builder.Services.AddSingleton<DBConnection>();
-
 builder.Services.AddScoped<IUserRepository, DBUser>();
 builder.Services.AddScoped<IVinylRepository, DBVinyl>();
 builder.Services.AddScoped<IOrderRepository, DBOrder>();
 builder.Services.AddScoped<IWishlistRepository, DBWishlist>();
+builder.Services.AddScoped<IRatingRepository, DBRating>();
+builder.Services.AddSingleton<ICacheRepository, DbCacheMarket>();
+
+builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IVinylService, VinylService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IWishlistService, WishlistService>();
-
-builder.Services.AddHttpClient<IGenreService, SpotifyGenreService>();
-builder.Services.AddHttpClient<ISpotifyAlbumService, SpotifyAlbumService>();
-
-builder.Services.AddSingleton<ICacheRepository, DbCacheMarket>();
-builder.Services.AddScoped<ICacheService, CacheService>();
-
-builder.Services.AddScoped<IRatingRepository, DBRating>();
 builder.Services.AddScoped<IRatingService, RatingService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
+builder.Services.Configure<SpotifySettings>(
+    builder.Configuration.GetSection("Spotify")
+);
+builder.Services.AddSingleton<ISpotifySettings>(sp =>
+    sp.GetRequiredService<IOptions<SpotifySettings>>().Value
+);
+
+builder.Services.AddHttpClient<ISpotifyHttpClient, SpotifyHttpClient>();
+builder.Services.AddScoped<ISpotifyAlbumService, SpotifyAlbumService>();
+builder.Services.AddScoped<IGenreService, SpotifyGenreService>();
 
 var app = builder.Build();
 

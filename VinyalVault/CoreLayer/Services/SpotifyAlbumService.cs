@@ -1,376 +1,313 @@
 ﻿using Common.DTOs;
-using DataLayer;
-using Microsoft.Extensions.Configuration;
-using System.Net.Http;
-using System.Net.Http.Headers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace CoreLayer.Services
 {
     public class SpotifyAlbumService : ISpotifyAlbumService
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _clientId;
-        private readonly string _clientSecret;
+        private readonly ISpotifyHttpClient _http;
+        private readonly ISpotifySettings _settings;
 
-        public SpotifyAlbumService(HttpClient httpClient, IConfiguration config)
+        public SpotifyAlbumService(
+            ISpotifyHttpClient httpClient,
+            ISpotifySettings settings)
         {
-            _httpClient = httpClient;
-            _clientId = config["Spotify:ClientId"];
-            _clientSecret = config["Spotify:ClientSecret"];
+            _http = httpClient;
+            _settings = settings;
         }
 
         private async Task<string> GetAccessTokenAsync()
         {
-            var auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_clientId}:{_clientSecret}"));
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://accounts.spotify.com/api/token");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth);
-            request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            var form = new Dictionary<string, string>
             {
-                { "grant_type", "client_credentials" }
-            });
+                ["grant_type"] = "client_credentials"
+            };
+            var authHeader = Convert.ToBase64String(
+                Encoding.UTF8.GetBytes($"{_settings.ClientId}:{_settings.ClientSecret}")
+            );
 
-            var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var json = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(json);
-            return doc.RootElement.GetProperty("access_token").GetString();
+            return await _http.PostFormAsync(
+                "https://accounts.spotify.com/api/token",
+                form,
+                new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Basic {authHeader}"
+                }
+            );
         }
 
-        public async Task<List<SpotifyAlbumPreview>> SearchAlbumPreviewsAsync(
-            string query,
-            int limit = 12)
+        public async Task<List<SpotifyAlbumPreview>> SearchAlbumPreviewsAsync(string query, int limit = 12)
         {
-            var token = await GetAccessTokenAsync();
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            if (string.IsNullOrWhiteSpace(query))
+                return new List<SpotifyAlbumPreview>();
 
+            var token = await GetAccessTokenAsync();
+            var headers = new Dictionary<string, string>
+            {
+                ["Authorization"] = $"Bearer {token}"
+            };
             var url = $"https://api.spotify.com/v1/search" +
                       $"?q={Uri.EscapeDataString(query)}" +
                       $"&type=album&limit={limit}";
 
-            using var rsp = await _httpClient.GetAsync(url);
-            rsp.EnsureSuccessStatusCode();
+            var raw = await _http.GetStringAsync(url, headers);
+            using var doc = JsonDocument.Parse(raw);
 
-            using var doc = JsonDocument.Parse(
-                await rsp.Content.ReadAsStringAsync()
-            );
-
-            var items = doc.RootElement
-                           .GetProperty("albums")
-                           .GetProperty("items")
-                           .EnumerateArray();
-
-            var previews = new List<SpotifyAlbumPreview>();
-            foreach (var itm in items)
-            {
-                previews.Add(new SpotifyAlbumPreview
-                {
-                    Id = itm.GetProperty("id").GetString()!,
-                    Name = itm.GetProperty("name").GetString()!,
-                    Artist = itm.GetProperty("artists")[0]
-                                     .GetProperty("name")
-                                     .GetString()!,
-                    CoverUrl = itm.GetProperty("images")[0]
-                                     .GetProperty("url")
-                                     .GetString()!
-                });
-            }
-
-            return previews;
+            return doc.RootElement
+                      .GetProperty("albums")
+                      .GetProperty("items")
+                      .EnumerateArray()
+                      .Select(it => new SpotifyAlbumPreview
+                      {
+                          Id = it.GetProperty("id").GetString()!,
+                          Name = it.GetProperty("name").GetString()!,
+                          Artist = it.GetProperty("artists")[0]
+                                            .GetProperty("name")
+                                            .GetString()!,
+                          CoverUrl = it.GetProperty("images")[0]
+                                            .GetProperty("url")
+                                            .GetString()!
+                      })
+                      .ToList();
         }
 
-        public async Task<(SpotifyAlbumPreview TopTrackAlbum, List<SpotifyAlbumPreview> AlbumMatches)>
-        SearchSmartAsync(string query)
-            {
-                var token = await GetAccessTokenAsync();
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-                var trackResponse = await _httpClient.GetAsync($"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(query)}&type=track&limit=10");
-                trackResponse.EnsureSuccessStatusCode();
-                var trackContent = await trackResponse.Content.ReadAsStringAsync();
-                var trackDoc = JsonDocument.Parse(trackContent);
-
-                SpotifyAlbumPreview topTrackAlbum = null;
-                int topPopularity = -1;
-
-                foreach (var track in trackDoc.RootElement.GetProperty("tracks").GetProperty("items").EnumerateArray())
-                {
-                    int popularity = track.GetProperty("popularity").GetInt32();
-
-                    if (popularity > topPopularity)
-                    {
-                        var album = track.GetProperty("album");
-
-                        topTrackAlbum = new SpotifyAlbumPreview
-                        {
-                            Id = album.GetProperty("id").GetString(),
-                            Name = album.GetProperty("name").GetString(),
-                            Artist = album.GetProperty("artists")[0].GetProperty("name").GetString(),
-                            CoverUrl = album.GetProperty("images")[0].GetProperty("url").GetString(),
-                            IsTrackResult = true
-                        };
-
-                        topPopularity = popularity;
-                    }
-                }
-
-                var albumResponse = await _httpClient.GetAsync($"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(query)}&type=album&limit=10");
-                albumResponse.EnsureSuccessStatusCode();
-                var albumContent = await albumResponse.Content.ReadAsStringAsync();
-                var albumDoc = JsonDocument.Parse(albumContent);
-
-                var albumMatches = new List<SpotifyAlbumPreview>();
-
-                foreach (var item in albumDoc.RootElement.GetProperty("albums").GetProperty("items").EnumerateArray())
-                {
-                    var albumId = item.GetProperty("id").GetString();
-
-                    if (topTrackAlbum != null && albumId == topTrackAlbum.Id)
-                        continue;
-
-                    albumMatches.Add(new SpotifyAlbumPreview
-                    {
-                        Id = albumId,
-                        Name = item.GetProperty("name").GetString(),
-                        Artist = item.GetProperty("artists")[0].GetProperty("name").GetString(),
-                        CoverUrl = item.GetProperty("images")[0].GetProperty("url").GetString()
-                    });
-                }
-
-                return (topTrackAlbum, albumMatches);
-            }
-
-        public async Task<SpotifyAlbumDetails> GetAlbumDetailsAsync(string albumId)
+        public async Task<(SpotifyAlbumPreview TopTrackAlbum, List<SpotifyAlbumPreview> AlbumMatches)> SearchSmartAsync(string query)
         {
             var token = await GetAccessTokenAsync();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await _httpClient.GetAsync($"https://api.spotify.com/v1/albums/{albumId}");
-            response.EnsureSuccessStatusCode();
-
-            var content = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(content);
-            var root = doc.RootElement;
-
-            var album = new SpotifyAlbumDetails
+            var headers = new Dictionary<string, string>
             {
-                Id = albumId,
-                Name = root.GetProperty("name").GetString(),
-                Artist = root.GetProperty("artists")[0].GetProperty("name").GetString(),
-                CoverUrl = root.GetProperty("images")[0].GetProperty("url").GetString(),
-                ReleaseDate = root.GetProperty("release_date").GetString(),
-                Genres = root.TryGetProperty("genres", out var genresNode)
-                            ? genresNode.EnumerateArray().Select(g => g.GetString()).ToList()
-                            : new List<string>(),
-                Tracks = root.GetProperty("tracks").GetProperty("items").EnumerateArray()
-                             .Select(track => track.GetProperty("name").GetString())
-                             .ToList()
+                ["Authorization"] = $"Bearer {token}"
             };
 
-            return album;
-        }
-        public async Task<List<SpotifyAlbumPreview>> GetMostPopularAlbumsAsync()
-        {
-            var token = await GetAccessTokenAsync();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            
+            var trackRaw = await _http.GetStringAsync(
+                $"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(query)}&type=track&limit=10",
+                headers);
+            using var trackDoc = JsonDocument.Parse(trackRaw);
 
-            var response = await _httpClient.GetAsync("https://api.spotify.com/v1/browse/new-releases?limit=20");
-            response.EnsureSuccessStatusCode();
-
-            var content = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(content);
-
-            var albums = new List<SpotifyAlbumPreview>();
-
-            foreach (var item in doc.RootElement.GetProperty("albums").GetProperty("items").EnumerateArray())
+            SpotifyAlbumPreview topTrackAlbum = null!;
+            int topPop = -1;
+            foreach (var tr in trackDoc.RootElement.GetProperty("tracks").GetProperty("items").EnumerateArray())
             {
-                var albumId = item.GetProperty("id").GetString();
-
-                albums.Add(new SpotifyAlbumPreview
+                var pop = tr.GetProperty("popularity").GetInt32();
+                if (pop > topPop)
                 {
-                    Id = albumId,
-                    Name = item.GetProperty("name").GetString(),
-                    Artist = item.GetProperty("artists")[0].GetProperty("name").GetString(),
-                    CoverUrl = item.GetProperty("images")[0].GetProperty("url").GetString()
+                    var alb = tr.GetProperty("album");
+                    topTrackAlbum = new SpotifyAlbumPreview
+                    {
+                        Id = alb.GetProperty("id").GetString()!,
+                        Name = alb.GetProperty("name").GetString()!,
+                        Artist = alb.GetProperty("artists")[0].GetProperty("name").GetString()!,
+                        CoverUrl = alb.GetProperty("images")[0].GetProperty("url").GetString()!,
+                        IsTrackResult = true
+                    };
+                    topPop = pop;
+                }
+            }
+
+            
+            var albumRaw = await _http.GetStringAsync(
+                $"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(query)}&type=album&limit=10",
+                headers);
+            using var albumDoc = JsonDocument.Parse(albumRaw);
+
+            var matches = new List<SpotifyAlbumPreview>();
+            foreach (var it in albumDoc.RootElement.GetProperty("albums").GetProperty("items").EnumerateArray())
+            {
+                var id = it.GetProperty("id").GetString()!;
+                if (topTrackAlbum != null && id == topTrackAlbum.Id) continue;
+                matches.Add(new SpotifyAlbumPreview
+                {
+                    Id = id,
+                    Name = it.GetProperty("name").GetString()!,
+                    Artist = it.GetProperty("artists")[0].GetProperty("name").GetString()!,
+                    CoverUrl = it.GetProperty("images")[0].GetProperty("url").GetString()!
                 });
             }
 
-            return albums;
+            return (topTrackAlbum, matches);
         }
-        public async Task<List<SpotifyAlbumPreview>> GetNewReleasesAsync()
+
+        public async Task<SpotifyAlbumDetails?> GetAlbumDetailsAsync(string albumId)
         {
-            var token = await GetAccessTokenAsync();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (string.IsNullOrWhiteSpace(albumId))
+                return null;
 
-            var response = await _httpClient.GetAsync("https://api.spotify.com/v1/browse/new-releases?limit=20");
-            response.EnsureSuccessStatusCode();
-
-            var content = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(content);
-
-            var albums = new List<SpotifyAlbumPreview>();
-
-            foreach (var item in doc.RootElement.GetProperty("albums").GetProperty("items").EnumerateArray())
+            try
             {
-                var albumId = item.GetProperty("id").GetString();
+                var token = await GetAccessTokenAsync();
+                var headers = new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {token}"
+                };
+                var raw = await _http.GetStringAsync(
+                    $"https://api.spotify.com/v1/albums/{albumId}", headers);
 
-                albums.Add(new SpotifyAlbumPreview
+                using var doc = JsonDocument.Parse(raw);
+                var root = doc.RootElement;
+                return new SpotifyAlbumDetails
                 {
                     Id = albumId,
-                    Name = item.GetProperty("name").GetString(),
-                    Artist = item.GetProperty("artists")[0].GetProperty("name").GetString(),
-                    CoverUrl = item.GetProperty("images")[0].GetProperty("url").GetString()
-                });
+                    Name = root.GetProperty("name").GetString()!,
+                    Artist = root.GetProperty("artists")[0].GetProperty("name").GetString()!,
+                    CoverUrl = root.GetProperty("images")[0].GetProperty("url").GetString()!,
+                    ReleaseDate = root.GetProperty("release_date").GetString()!,
+                    Genres = root.TryGetProperty("genres", out var gn)
+                                  ? gn.EnumerateArray().Select(g => g.GetString()!).ToList()
+                                  : new List<string>(),
+                    Tracks = root.GetProperty("tracks").GetProperty("items")
+                                      .EnumerateArray()
+                                      .Select(t => t.GetProperty("name").GetString()!)
+                                      .ToList()
+                };
             }
-
-            return albums;
+            catch
+            {
+                return null;
+            }
         }
+
+        public async Task<List<SpotifyAlbumPreview>> GetNewReleasesAsync(int limit = 20)
+        {
+            var token = await GetAccessTokenAsync();
+            var headers = new Dictionary<string, string>
+            {
+                ["Authorization"] = $"Bearer {token}"
+            };
+            var raw = await _http.GetStringAsync(
+                $"https://api.spotify.com/v1/browse/new-releases?limit={limit}",
+                headers);
+
+            using var doc = JsonDocument.Parse(raw);
+            return doc.RootElement
+                      .GetProperty("albums")
+                      .GetProperty("items")
+                      .EnumerateArray()
+                      .Select(it => new SpotifyAlbumPreview
+                      {
+                          Id = it.GetProperty("id").GetString()!,
+                          Name = it.GetProperty("name").GetString()!,
+                          Artist = it.GetProperty("artists")[0].GetProperty("name").GetString()!,
+                          CoverUrl = it.GetProperty("images")[0].GetProperty("url").GetString()!
+                      })
+                      .ToList();
+        }
+
+        public async Task<List<SpotifyAlbumPreview>> GetMostPopularAlbumsAsync(int limit = 20)
+            => await GetNewReleasesAsync(limit);
 
         public async Task<List<SpotifyAlbumPreview>> GetPopularAlbumsByGenresAsync(List<string> genres)
         {
             var results = new List<SpotifyAlbumPreview>();
-
             foreach (var genre in genres)
-            {
-                var albums = await SearchAlbumPreviewsAsync(genre);
-                results.AddRange(albums);
-            }
+                results.AddRange(await SearchAlbumPreviewsAsync(genre));
 
-            var distinctAlbums = results
-                .GroupBy(a => a.Id)
-                .Select(g => g.First())
-                .OrderByDescending(a => a.EstimatedPopularity ?? 0)
-                .ToList();
-
-            return distinctAlbums;
+            return results
+                   .GroupBy(a => a.Id)
+                   .Select(g => g.First())
+                   .ToList();
         }
+
         public async Task<List<SpotifyAlbumPreview>> GetAlbumsByIdsAsync(List<string> albumIds)
         {
             var token = await GetAccessTokenAsync();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var albums = new List<SpotifyAlbumPreview>();
+            var headers = new Dictionary<string, string>
+            {
+                ["Authorization"] = $"Bearer {token}"
+            };
+            var list = new List<SpotifyAlbumPreview>();
 
             foreach (var id in albumIds)
             {
-                try
+                var raw = await _http.GetStringAsync(
+                    $"https://api.spotify.com/v1/albums/{id}", headers);
+                using var doc = JsonDocument.Parse(raw);
+                var root = doc.RootElement;
+
+                list.Add(new SpotifyAlbumPreview
                 {
-                    var response = await _httpClient.GetAsync($"https://api.spotify.com/v1/albums/{id}");
-                    if (!response.IsSuccessStatusCode) continue;
-
-                    var content = await response.Content.ReadAsStringAsync();
-                    var doc = JsonDocument.Parse(content);
-                    var root = doc.RootElement;
-
-                    var preview = new SpotifyAlbumPreview
-                    {
-                        Id = id,
-                        Name = root.GetProperty("name").GetString(),
-                        Artist = root.GetProperty("artists")[0].GetProperty("name").GetString(),
-                        CoverUrl = root.GetProperty("images")[0].GetProperty("url").GetString(),
-                        Genres = root.TryGetProperty("genres", out var genresNode)
-                                    ? genresNode.EnumerateArray().Select(g => g.GetString()).ToList()
-                                    : new List<string>()
-                    };
-
-                    albums.Add(preview);
-                }
-                catch
-                {
-                    continue;
-                }
-            }
-
-            return albums;
-        }
-        public async Task<List<SpotifyAlbumPreview>> GetRecommendationsByGenresAndArtistsAsync(List<string> genres, List<string> artists)
-        {
-            var token = await GetAccessTokenAsync();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var genreSeed = string.Join(",", genres.Take(2));  
-            var artistSeedList = new List<string>();
-
-            foreach (var artistName in artists.Take(3))
-            {
-                var response = await _httpClient.GetAsync($"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(artistName)}&type=artist&limit=1");
-                if (!response.IsSuccessStatusCode) continue;
-
-                var content = await response.Content.ReadAsStringAsync();
-                var doc = JsonDocument.Parse(content);
-                var items = doc.RootElement.GetProperty("artists").GetProperty("items");
-                if (items.GetArrayLength() > 0)
-                {
-                    var artistId = items[0].GetProperty("id").GetString();
-                    artistSeedList.Add(artistId);
-                }
-            }
-
-            var artistSeed = string.Join(",", artistSeedList);
-            var seedParam = $"seed_genres={genreSeed}&seed_artists={artistSeed}";
-
-            var recResponse = await _httpClient.GetAsync($"https://api.spotify.com/v1/recommendations?{seedParam}&limit=15");
-            recResponse.EnsureSuccessStatusCode();
-
-            var recContent = await recResponse.Content.ReadAsStringAsync();
-            var recDoc = JsonDocument.Parse(recContent);
-
-            var albums = new List<SpotifyAlbumPreview>();
-            var seenAlbumIds = new HashSet<string>();
-
-            foreach (var track in recDoc.RootElement.GetProperty("tracks").EnumerateArray())
-            {
-                var album = track.GetProperty("album");
-                var albumId = album.GetProperty("id").GetString();
-
-                if (seenAlbumIds.Contains(albumId)) continue;
-                seenAlbumIds.Add(albumId);
-
-                albums.Add(new SpotifyAlbumPreview
-                {
-                    Id = albumId,
-                    Name = album.GetProperty("name").GetString(),
-                    Artist = album.GetProperty("artists")[0].GetProperty("name").GetString(),
-                    CoverUrl = album.GetProperty("images")[0].GetProperty("url").GetString()
+                    Id = id,
+                    Name = root.GetProperty("name").GetString()!,
+                    Artist = root.GetProperty("artists")[0].GetProperty("name").GetString()!,
+                    CoverUrl = root.GetProperty("images")[0].GetProperty("url").GetString()!,
+                    Genres = root.TryGetProperty("genres", out var gn)
+                               ? gn.EnumerateArray().Select(g => g.GetString()!).ToList()
+                               : new List<string>()
                 });
             }
 
-            return albums;
+            return list;
         }
+
+        public async Task<List<SpotifyAlbumPreview>> GetRecommendationsByGenresAndArtistsAsync(List<string> genres, List<string> artists)
+        {
+            var token = await GetAccessTokenAsync();
+            var headers = new Dictionary<string, string>
+            {
+                ["Authorization"] = $"Bearer {token}"
+            };
+            var genreSeed = string.Join(",", genres.Take(2));
+            var artistSeedList = new List<string>();
+
+            foreach (var name in artists.Take(3))
+            {
+                var raw = await _http.GetStringAsync(
+                    $"https://api.spotify.com/v1/search?q={Uri.EscapeDataString(name)}&type=artist&limit=1",
+                    headers);
+                using var doc = JsonDocument.Parse(raw);
+                var items = doc.RootElement.GetProperty("artists").GetProperty("items");
+                if (items.GetArrayLength() > 0)
+                    artistSeedList.Add(items[0].GetProperty("id").GetString()!);
+            }
+
+            var recJson = await _http.GetStringAsync(
+                $"https://api.spotify.com/v1/recommendations?seed_genres={genreSeed}&seed_artists={string.Join(",", artistSeedList)}&limit=15",
+                headers);
+            using var recDoc = JsonDocument.Parse(recJson);
+
+            var seen = new HashSet<string>();
+            var result = new List<SpotifyAlbumPreview>();
+            foreach (var t in recDoc.RootElement.GetProperty("tracks").EnumerateArray())
+            {
+                var alb = t.GetProperty("album");
+                var id = alb.GetProperty("id").GetString()!;
+                if (seen.Add(id))
+                    result.Add(new SpotifyAlbumPreview
+                    {
+                        Id = id,
+                        Name = alb.GetProperty("name").GetString()!,
+                        Artist = alb.GetProperty("artists")[0].GetProperty("name").GetString()!,
+                        CoverUrl = alb.GetProperty("images")[0].GetProperty("url").GetString()!
+                    });
+            }
+
+            return result;
+        }
+
         public async Task<List<SpotifyAlbumPreview>> GetRecommendedAlbumsAsync(string userEmail, IOrderService orderService, IWishlistService wishlistService)
         {
-            var recommended = new List<SpotifyAlbumPreview>();
+            var orders = await orderService.GetOrdersByUser(userEmail);
+            var wishes = await wishlistService.GetAlbumIdsInWishlist(userEmail);
 
-            var orderHistory = await orderService.GetOrdersByUser(userEmail);
-            var wishlistAlbumIds = await wishlistService.GetAlbumIdsInWishlist(userEmail);
+            var keywords = new HashSet<string>(
+                orders.Select(o => o.Artist).Where(a => !string.IsNullOrEmpty(a))
+                      .Concat(orders.Select(o => o.Title))
+                      .Concat(wishes)
+            );
 
-            var keywords = new HashSet<string>();
+            var recs = new List<SpotifyAlbumPreview>();
+            foreach (var kw in keywords.Take(10))
+                recs.AddRange((await SearchAlbumPreviewsAsync(kw)).Take(3));
 
-            foreach (var order in orderHistory)
-            {
-                if (!string.IsNullOrWhiteSpace(order.Artist)) keywords.Add(order.Artist);
-                if (!string.IsNullOrWhiteSpace(order.Title)) keywords.Add(order.Title);
-            }
-
-            foreach (var albumId in wishlistAlbumIds)
-            {
-                keywords.Add(albumId);
-            }
-
-            foreach (var keyword in keywords.Take(10))
-            {
-                var results = await SearchAlbumPreviewsAsync(keyword);
-                recommended.AddRange(results.Take(3));
-            }
-
-            return recommended
-                .GroupBy(a => a.Id)
-                .Select(g => g.First())
-                .OrderByDescending(a => a.Popularity)
-                .ToList();
+            return recs
+                   .GroupBy(a => a.Id)
+                   .Select(g => g.First())
+                   .ToList();
         }
-
     }
 }

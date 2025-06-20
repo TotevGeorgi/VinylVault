@@ -1,5 +1,6 @@
-﻿@page "{id?}"
+﻿@page "/VinylDetails/{id?}"
 @model VinylVaultWeb.Pages.VinylDetailsModel
+
 
 @{
     ViewData["Title"] = Model.Album?.Name ?? "Album Details";
@@ -8,9 +9,6 @@
 <div id="loadingOverlay">
   <div class="spinner-vinyl"></div>
 </div>
-
-
-<a href="/Marketplace" class="btn btn-outline-light back-btn">← Back to Marketplace</a>
 
 <div class="album-product-layout">
     <div class="album-images">

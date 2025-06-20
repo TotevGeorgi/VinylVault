@@ -28,7 +28,6 @@ namespace DataLayer
             }
             catch (SqlException ex)
             {
-                Console.WriteLine($"Database connection failed: {ex.Message}");
                 throw;
             }
         }

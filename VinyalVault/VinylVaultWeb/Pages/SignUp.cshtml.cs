@@ -13,6 +13,7 @@ namespace VinylVaultWeb.Pages
     public class SignUpModel : PageModel
     {
         private readonly IUserService _userService;
+        private readonly IPasswordHasher _passwordHasher;
 
         [BindProperty]
         public RegisterDTO Input { get; set; }
@@ -20,9 +21,10 @@ namespace VinylVaultWeb.Pages
         public string? ErrorMessage { get; set; }
         public string? EmailError { get; set; }
 
-        public SignUpModel(IUserService userService)
+        public SignUpModel(IUserService userService, IPasswordHasher passwordHasher)
         {
             _userService = userService;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -52,7 +54,7 @@ namespace VinylVaultWeb.Pages
             {
                 UserId = Guid.NewGuid(),
                 Email = Input.Email,
-                PasswordHash = PasswordHasher.Hash(Input.Password),
+                PasswordHash = _passwordHasher.Hash(Input.Password),
                 FullName = Input.FullName,
                 Address = Input.Address,
                 Role = "User"
