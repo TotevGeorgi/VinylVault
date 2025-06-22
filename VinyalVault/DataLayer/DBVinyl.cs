@@ -206,7 +206,6 @@ namespace DataLayer
                                   : rdr.GetDateTime(10)
             };
         }
-
         public async Task<bool> UpdateStatus(int id, string status)
         {
             using var conn = _dbConnection.GetConnection();
