@@ -19,6 +19,7 @@ namespace Common.DTOs
         public string AlbumType { get; set; } = string.Empty;
         public DateTime LastUpdated { get; set; }
         public bool IsAvailable { get; set; } = false;
+        public List<string> Genres { get; set; } = new();
         public string? Query { get; set; }
 
     }

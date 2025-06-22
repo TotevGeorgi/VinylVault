@@ -1,37 +1,44 @@
 ﻿@page
-<div id="loadingOverlay">
-    <div class="spinner-vinyl"></div>
-</div>
-
 @model VinylVaultWeb.Pages.MarketplaceModel
 @{
     ViewData["Title"] = "Marketplace";
 }
 
+<!-- loading overlay -->
+<div id="loadingOverlay" style="
+     position: fixed;
+     top: 0; left: 0;
+     width: 100%; height: 100%;
+     background: rgba(0,0,0,0.5);
+     display: none;
+     align-items: center;
+     justify-content: center;
+     z-index: 9999;">
+    <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
 <h2>Marketplace</h2>
 
 <form method="get" class="mb-4">
     <input type="text" name="Query" value="@Model.Query" placeholder="Search for vinyl or song..." />
-
     <select name="SortBy" onchange="this.form.submit()">
-        <option value="popular" selected="@("popular" == Model.SortBy)">Popular Now</option>
-        <option value="newest" selected="@("newest" == Model.SortBy)">Newest</option>
+        <option value="popular" selected="@("popular"   == Model.SortBy)">Popular Now</option>
+        <option value="newest" selected="@("newest"    == Model.SortBy)">Newest</option>
         <option value="mostlistened" selected="@("mostlistened" == Model.SortBy)">Most Listened To</option>
     </select>
-
     <br />
     <label><strong>Genres:</strong></label><br />
     <button type="button" onclick="selectAllGenres()">Select All</button>
     <button type="button" onclick="clearGenres()">Clear</button>
     <br />
-
     <select id="genreSelect" name="Genres" multiple size="6" onchange="this.form.submit()">
         @foreach (var genre in Model.AvailableGenres)
         {
             <option value="@genre" selected="@Model.Genres.Contains(genre)">@genre</option>
         }
     </select>
-
     <br />
     <button type="submit">Search</button>
 </form>
@@ -50,14 +57,9 @@
                             <img src="@album.CoverUrl" alt="@album.Name" />
                             <h5>@album.Name</h5>
                             <p>@album.Artist</p>
-                            @if (album.IsAvailable)
-                            {
-                                <div class="status available">✅ Available</div>
-                            }
-                            else
-                            {
-                                <div class="status unavailable">❌ Not Available</div>
-                            }
+                            <div class="status @(album.IsAvailable ? "available" : "unavailable")">
+                                @(album.IsAvailable ? "✅ Available" : "❌ Not Available")
+                            </div>
                         </div>
                     </a>
                 }
@@ -67,7 +69,7 @@
     </div>
 }
 
-@if (string.IsNullOrWhiteSpace(Model.Query) && Model.MostPopularAlbums.Any())
+@if (Model.MostPopularAlbums.Any() && string.IsNullOrWhiteSpace(Model.Query))
 {
     <div class="slider-container">
         <h3>🔥 Most Popular Albums</h3>
@@ -81,19 +83,40 @@
                             <img src="@album.CoverUrl" alt="@album.Name" />
                             <h5>@album.Name</h5>
                             <p>@album.Artist</p>
-                            @if (album.IsAvailable)
-                            {
-                                <div class="status available">✅ Available</div>
-                            }
-                            else
-                            {
-                                <div class="status unavailable">❌ Not Available</div>
-                            }
+                            <div class="status @(album.IsAvailable ? "available" : "unavailable")">
+                                @(album.IsAvailable ? "✅ Available" : "❌ Not Available")
+                            </div>
                         </div>
                     </a>
                 }
             </div>
             <button onclick="scrollSlider('popularSlider', 1)" class="arrow right">→</button>
+        </div>
+    </div>
+}
+
+@if (Model.NewReleases.Any() && string.IsNullOrWhiteSpace(Model.Query))
+{
+    <div class="slider-container">
+        <h3>🆕 New Releases</h3>
+        <div class="slider-wrapper">
+            <button onclick="scrollSlider('newReleasesSlider', -1)" class="arrow left">←</button>
+            <div id="newReleasesSlider" class="popular-slider">
+                @foreach (var album in Model.NewReleases)
+                {
+                    <a href="/VinylDetails?id=@album.Id" class="vinyl-card-link">
+                        <div class="vinyl-card">
+                            <img src="@album.CoverUrl" alt="@album.Name" />
+                            <h5>@album.Name</h5>
+                            <p>@album.Artist</p>
+                            <div class="status @(album.IsAvailable ? "available" : "unavailable")">
+                                @(album.IsAvailable ? "✅ Available" : "❌ Not Available")
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+            <button onclick="scrollSlider('newReleasesSlider', 1)" class="arrow right">→</button>
         </div>
     </div>
 }
@@ -108,46 +131,13 @@
                 <h4>@Model.TopResult.Name</h4>
                 <p>@Model.TopResult.Artist</p>
                 <span class="tag song">Type: Song</span><br />
-                @if (Model.TopResult.IsAvailable)
-                {
-                    <div class="status available">✅ Available</div>
-                }
-                else
-                {
-                    <div class="status unavailable">❌ Not Available</div>
-                }
+                <div class="status @(Model.TopResult.IsAvailable ? "available" : "unavailable")">
+                    @(Model.TopResult.IsAvailable ? "✅ Available" : "❌ Not Available")
+                </div>
             </div>
         </a>
     </div>
 }
-
-<div class="slider-container">
-    <h3>🆕 New Releases</h3>
-    <div class="slider-wrapper">
-        <button onclick="scrollSlider('newReleasesSlider', -1)" class="arrow left">←</button>
-        <div id="newReleasesSlider" class="popular-slider">
-            @foreach (var album in Model.NewReleases)
-            {
-                <a href="/VinylDetails?id=@album.Id" class="vinyl-card-link">
-                    <div class="vinyl-card">
-                        <img src="@album.CoverUrl" alt="@album.Name" />
-                        <h5>@album.Name</h5>
-                        <p>@album.Artist</p>
-                        @if (album.IsAvailable)
-                        {
-                            <div class="status available">✅ Available</div>
-                        }
-                        else
-                        {
-                            <div class="status unavailable">❌ Not Available</div>
-                        }
-                    </div>
-                </a>
-            }
-        </div>
-        <button onclick="scrollSlider('newReleasesSlider', 1)" class="arrow right">→</button>
-    </div>
-</div>
 
 @if (Model.Albums.Any())
 {
@@ -161,15 +151,9 @@
                     <h4>@item.Album.Name</h4>
                     <p>@item.Album.Artist</p>
                     <span class="tag vinyl">Type: Vinyl</span><br />
-                    @if (item.IsAvailable)
-                    {
-                        <div class="status available">✅ Available</div>
-                        <button class="btn btn-outline-success btn-sm mt-2">View Details</button>
-                    }
-                    else
-                    {
-                        <div class="status unavailable">❌ Not Available</div>
-                    }
+                    <div class="status @(item.IsAvailable ? "available" : "unavailable")">
+                        @(item.IsAvailable ? "✅ Available" : "❌ Not Available")
+                    </div>
                 </div>
             </a>
         }
@@ -182,36 +166,26 @@ else if (Model.TopResult == null)
 
 @section Scripts {
     <script>
-        function scrollSlider(sliderId, direction) {
-          const slider = document.getElementById(sliderId);
-          slider.scrollBy({ left: direction * 220, behavior: 'smooth' });
+        function scrollSlider(id, dir) {
+          document.getElementById(id).scrollBy({ left: dir * 220, behavior: 'smooth' });
         }
         function selectAllGenres() {
-          const select = document.getElementById("genreSelect");
-          for (let i = 0; i < select.options.length; i++)
-            select.options[i].selected = true;
-          select.form.submit();
+          const s = document.getElementById("genreSelect");
+          for (let i = 0; i < s.options.length; i++) s.options[i].selected = true;
+          s.form.submit();
         }
         function clearGenres() {
-          const select = document.getElementById("genreSelect");
-          for (let i = 0; i < select.options.length; i++)
-            select.options[i].selected = false;
-          select.form.submit();
+          const s = document.getElementById("genreSelect");
+          for (let i = 0; i < s.options.length; i++) s.options[i].selected = false;
+          s.form.submit();
         }
-
-          document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", () => {
           const overlay = document.getElementById("loadingOverlay");
           const show = () => overlay.style.display = "flex";
-
-          document.querySelector("form.mb-4")
-                  .addEventListener("submit", show);
-
-          document.querySelectorAll(".vinyl-card-link")
-                  .forEach(a => a.addEventListener("click", show));
-
+          document.querySelector("form.mb-4")?.addEventListener("submit", show);
+          document.querySelectorAll(".vinyl-card-link").forEach(a => a.addEventListener("click", show));
           document.querySelectorAll("nav a.nav-link, nav a.navbar-brand")
                   .forEach(a => a.addEventListener("click", show));
         });
     </script>
 }
-

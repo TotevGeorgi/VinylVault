@@ -8,7 +8,7 @@ namespace CoreLayer.Services
 {
     public interface ISellerService
     {
-        Task<bool> UpgradeToSeller(string email);
-        Task<bool> RemoveItem(string email, string item);
+        Task<bool> UpgradeToSellerAsync(string email);
+        Task<bool> RemoveItemAsync(string email, string item);
     }
 }

@@ -20,11 +20,6 @@ namespace UnitTest
         private readonly Mock<IVinylService> _vinyl = new();
         private readonly int max = 20;
 
-        public CacheServiceTests()
-        {
-            _svc = new CacheService(_cacheRepo.Object, _spotify.Object, _vinyl.Object);
-        }
-
         [Fact]
         public async Task GetCachedOrFreshAsync_WhenCacheExpired_SavesAndReturnsMapped()
         {

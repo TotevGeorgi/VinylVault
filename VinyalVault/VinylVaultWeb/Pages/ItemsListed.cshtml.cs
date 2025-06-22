@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using CoreLayer;
 using CoreLayer.Services;
+using Common;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Common;
+using CoreLayer;
 
 namespace VinylVaultWeb.Pages
 {
@@ -14,19 +14,19 @@ namespace VinylVaultWeb.Pages
     public class ListedItemsModel : PageModel
     {
         private readonly IVinylService _vinylService;
-        private readonly IUserService _userService;
+        private readonly IAuthenticationService _authService;
 
-        public ListedItemsModel(IVinylService vinylService, IUserService userService)
+        public ListedItemsModel(IVinylService vinylService, IAuthenticationService authService)
         {
             _vinylService = vinylService;
-            _userService = userService;
+            _authService = authService;
         }
 
         [BindProperty(SupportsGet = true)]
-        public string Tab { get; set; } = "active";         
+        public string Tab { get; set; } = "active";
 
         [BindProperty(SupportsGet = true)]
-        public string SortBy { get; set; } = "dateDesc";    
+        public string SortBy { get; set; } = "dateDesc";
 
         public List<Vinyl> ActiveVinyls { get; set; } = new();
         public List<Vinyl> SoldVinyls { get; set; } = new();
@@ -35,7 +35,10 @@ namespace VinylVaultWeb.Pages
         public async Task<IActionResult> OnGetAsync()
         {
             var email = User.Identity?.Name;
-            var user = await _userService.GetUserByEmail(email);
+            if (string.IsNullOrEmpty(email))
+                return RedirectToPage("/LogIn");
+
+            var user = await _authService.GetUserByEmail(email);
             if (user?.Role != "Seller")
                 return RedirectToPage("/LogIn");
 

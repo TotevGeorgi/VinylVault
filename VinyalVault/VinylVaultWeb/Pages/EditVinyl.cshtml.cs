@@ -16,12 +16,11 @@ namespace VinylVaultWeb.Pages
     public class EditVinylModel : PageModel
     {
         private readonly IVinylService _vinylService;
-        private readonly IUserService _userService;
-
-        public EditVinylModel(IVinylService vinylService, IUserService userService)
+        private readonly IUserProfileService _profileService;
+        public EditVinylModel(IVinylService vinylService, IUserProfileService userProfileService)
         {
             _vinylService = vinylService;
-            _userService = userService;
+            _profileService = userProfileService;
         }
 
         [BindProperty(SupportsGet = true)]
@@ -50,12 +49,12 @@ namespace VinylVaultWeb.Pages
         public string? SuccessMessage { get; set; }
 
         public List<SelectListItem> ConditionOptions { get; } = new()
-    {
-      new SelectListItem("Mint","Mint"),
-      new SelectListItem("Near Mint","Near Mint"),
-      new SelectListItem("Good","Good"),
-      new SelectListItem("Fair","Fair")
-    };
+        {
+          new SelectListItem("Mint","Mint"),
+          new SelectListItem("Near Mint","Near Mint"),
+          new SelectListItem("Good","Good"),
+          new SelectListItem("Fair","Fair")
+        };
 
         public async Task<IActionResult> OnGetAsync()
         {

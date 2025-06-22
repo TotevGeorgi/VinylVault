@@ -5,67 +5,90 @@ using CoreLayer.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace VinylVaultWeb.Pages
 {
     [Authorize]
     public class ProfileModel : PageModel
     {
-        private readonly IUserService _userService;
+        private readonly IAuthenticationService _authService;
+        private readonly IUserProfileService _profileService;
+        private readonly ISellerService _sellerService;
         private readonly IRatingService _ratingService;
         private readonly IVinylService _vinylService;
 
-        [BindProperty(SupportsGet = true)]
-        public Person User { get; set; } = new();
+        [BindProperty]
+        public Person ProfileUser { get; set; } = new();
 
+        [TempData]
         public string? Message { get; set; }
 
         public List<SellerRatingDTO> SellerRatings { get; set; } = new();
-
         public List<Vinyl> SellerVinyls { get; set; } = new();
 
-        public ProfileModel(IUserService userService, IRatingService ratingService, IVinylService vinylService)
+        public ProfileModel(IAuthenticationService authService, IUserProfileService profileService, ISellerService sellerService, IRatingService ratingService, IVinylService vinylService)
         {
-            _userService = userService;
+            _authService = authService;
+            _profileService = profileService;
+            _sellerService = sellerService;
             _ratingService = ratingService;
             _vinylService = vinylService;
         }
 
         public async Task<IActionResult> OnGetAsync()
         {
-            string? email = HttpContext.User.Identity?.Name;
-            if (string.IsNullOrEmpty(email)) return RedirectToPage("/LogIn");
+            var email = User?.Identity?.Name;
+            if (string.IsNullOrEmpty(email))
+                return RedirectToPage("/LogIn");
 
-            var userFromDb = await _userService.GetUserByEmail(email);
-            if (userFromDb == null) return RedirectToPage("/LogIn");
 
-            User = userFromDb;
+            var userFromDb = await _authService.GetUserByEmail(email);
+            if (userFromDb == null)
+                return RedirectToPage("/LogIn");
 
-            if (User.Role == "Seller")
+            ProfileUser = userFromDb;
+
+            if (ProfileUser.Role == "Seller")
             {
-                SellerRatings = await _ratingService.GetRatingsForSellerAsync(User.Email);
-                SellerVinyls = await _vinylService.GetVinylsBySeller(User.Email);
+                SellerRatings = await _ratingService.GetRatingsForSellerAsync(email);
+                SellerVinyls = await _vinylService.GetVinylsBySeller(email);
             }
 
             return Page();
         }
-
         public async Task<IActionResult> OnPostSaveAsync()
         {
-            string? email = HttpContext.User.Identity?.Name;
-            if (string.IsNullOrEmpty(email)) return RedirectToPage("/LogIn");
+            var email = HttpContext.User.Identity?.Name;
+            if (string.IsNullOrEmpty(email))
+                return RedirectToPage("/LogIn");
 
-            _userService.UpdateUserProfile(email, User.FullName, User.Address);
-            Message = "Profile updated successfully.";
+            var ok = await _profileService
+                .UpdateUserProfileAsync(
+                    email,
+                    ProfileUser.FullName,
+                    ProfileUser.Address
+                );
+
+            Message = ok
+                ? "Profile updated successfully."
+                : "An error occurred updating your profile.";
+
             return RedirectToPage();
         }
 
         public async Task<IActionResult> OnPostBecomeSellerAsync()
         {
-            string? email = HttpContext.User.Identity?.Name;
-            if (string.IsNullOrEmpty(email)) return RedirectToPage("/LogIn");
+            var email = User?.Identity?.Name;
+            if (string.IsNullOrEmpty(email))
+                return RedirectToPage("/LogIn");
 
-            await _userService.UpgradeToSeller(email);
+            var upgraded = await _sellerService.UpgradeToSellerAsync(email);
+            Message = upgraded
+                ? "You’ve been upgraded to a Seller!"
+                : "Could not upgrade at this time.";
+
             return RedirectToPage();
         }
     }

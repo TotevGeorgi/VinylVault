@@ -1,77 +1,49 @@
 ﻿using Common;
-using Common.DTOs;
 using Common.Repositories;
 using DataLayer;
+using System;
 using System.Threading.Tasks;
 
 namespace CoreLayer.Services
 {
     public class UserService : IAuthenticationService, IRegistrationService, IUserProfileService, ISellerService
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IPasswordHasher _passwordHasher;
-            
+        private readonly IUserRepository _userRepo;
+        private readonly IPasswordHasher _hasher;
 
-        public UserService(IUserRepository userRepository, IPasswordHasher passwordHasher)
+        public UserService(IUserRepository userRepo, IPasswordHasher hasher)
         {
-            _userRepository = userRepository;
-            _passwordHasher = passwordHasher;
-        }
-
-        public async Task<Guid?> RegisterUser(Person person)
-        {
-            return await _userRepository.RegisterUser(person);
-        }
-
-
-        public async Task<bool> EmailExists(string email)
-        {
-            return await _userRepository.EmailExists(email);  
+            _userRepo = userRepo;
+            _hasher = hasher;
         }
 
         public async Task<Person?> AuthenticateUser(string email, string password)
         {
-            var person = await _userRepository.GetUserByEmail(email);
-
-            if (person == null)
+            var p = await _userRepo.GetUserByEmail(email);
+            if (p == null || !_hasher.Verify(password, p.PasswordHash) || p.UserId == Guid.Empty)
                 return null;
-
-            if (!_passwordHasher.Verify(password, person.PasswordHash))
-                return null;
-
-            if (person.UserId == Guid.Empty)
-            {
-                Console.WriteLine($"[ERROR] User found but has empty UserId for email: {email}");
-                return null;
-            }
-
-            return person;
+            return p;
         }
 
+        public Task<Person?> GetUserByEmail(string email)
+            => _userRepo.GetUserByEmail(email);
 
-        public async Task<Person?> GetUserByEmail(string email)
-        {
-            return await _userRepository.GetUserByEmail(email);  
-        }
+        public Task<Guid?> RegisterUser(Person person)
+            => _userRepo.RegisterUser(person);
 
-        public bool UpdateUserProfile(string email, string fullName, string address)
-        {
-            return _userRepository.UpdateUserProfile(email, fullName, address);  
-        }
+        public Task<bool> EmailExists(string email)
+            => _userRepo.EmailExists(email);
 
-        public async Task<bool> UpgradeToSeller(string email)
-        {
-            return await _userRepository.UpgradeToSeller(email);  
-        }
+        public Task<bool> UpdateUserProfileAsync(string email, string fullName, string address)
+            => Task.FromResult(_userRepo.UpdateUserProfile(email, fullName, address));
 
-        public async Task<bool> DeleteUser(string email)
-        {
-            return await _userRepository.DeleteUser(email);  
-        }
+        public Task<bool> DeleteUserAsync(string email)
+            => _userRepo.DeleteUser(email);
 
-        public async Task<bool> RemoveItem(string email, string item)
-        {
-            return await _userRepository.RemoveItem(email, item);
-        }
+        public Task<bool> UpgradeToSellerAsync(string email)
+            => _userRepo.UpgradeToSeller(email);
+
+        public Task<bool> RemoveItemAsync(string email, string item)
+            => _userRepo.RemoveItem(email, item);
     }
 }

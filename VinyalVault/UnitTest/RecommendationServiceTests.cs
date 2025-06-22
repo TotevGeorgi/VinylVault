@@ -3,6 +3,7 @@ using Moq;
 using Common.DTOs;
 using Common.Repositories;
 using CoreLayer.Services;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ namespace UnitTest
         private readonly Mock<IWishlistRepository> _wish = new();
         private readonly Mock<IOrderRepository> _order = new();
         private readonly Mock<ISpotifyAlbumService> _spotify = new();
+        private readonly Mock<ILogger<RecommendationService>> _logger = new();
 
         public RecommendationServiceTests()
         {
@@ -26,7 +28,12 @@ namespace UnitTest
                   It.IsAny<List<string>>(), It.IsAny<List<string>>()))
               .ReturnsAsync(new List<SpotifyAlbumPreview>());
 
-            _svc = new RecommendationService(_wish.Object, _order.Object, _spotify.Object);
+            _svc = new RecommendationService(
+                _wish.Object,
+                _order.Object,
+                _spotify.Object,
+                _logger.Object    
+            );
         }
 
         [Fact]

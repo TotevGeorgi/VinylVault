@@ -15,17 +15,19 @@
     <form method="post" asp-page-handler="Save">
         <div class="mb-3">
             <label class="form-label">Email (read-only)</label>
-            <input class="form-control" value="@Model.User.Email" disabled />
+            <input class="form-control" value="@Model.ProfileUser.Email" disabled />
         </div>
 
         <div class="mb-3">
-            <label asp-for="User.FullName" class="form-label">Full Name</label>
-            <input asp-for="User.FullName" class="form-control" />
+            <label asp-for="ProfileUser.FullName" class="form-label">Full Name</label>
+            <input asp-for="ProfileUser.FullName" class="form-control" />
+            <span asp-validation-for="ProfileUser.FullName" class="text-danger"></span>
         </div>
 
         <div class="mb-3">
-            <label asp-for="User.Address" class="form-label">Address</label>
-            <input asp-for="User.Address" class="form-control" />
+            <label asp-for="ProfileUser.Address" class="form-label">Address</label>
+            <input asp-for="ProfileUser.Address" class="form-control" />
+            <span asp-validation-for="ProfileUser.Address" class="text-danger"></span>
         </div>
 
         <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -34,12 +36,12 @@
     <hr class="my-4" />
 
     <h5>Seller Status</h5>
-    @if (Model.User.Role == "Seller")
+    @if (Model.ProfileUser.Role == "Seller")
     {
         <p class="text-success">You are currently a <strong>Seller</strong>.</p>
 
         <hr class="my-4" />
-        <h5>Ratings & Reviews</h5>
+        <h5>Ratings &amp; Reviews</h5>
 
         @if (Model.SellerRatings.Any())
         {
@@ -76,7 +78,9 @@
                                 @{
                                     var fullComment = review.Comment ?? "";
                                     var isLong = fullComment.Length > 100;
-                                    var shortComment = isLong ? fullComment.Substring(0, 100) + "..." : fullComment;
+                                    var shortComment = isLong
+                                    ? fullComment.Substring(0, 100) + "..."
+                                    : fullComment;
                                 }
                                 <span class="short">@shortComment</span>
                                 @if (isLong)
@@ -85,12 +89,14 @@
                                     <span class="read-more-btn" onclick="toggleComment(this)">read more</span>
                                 }
                             </em><br />
-                            <small class="text-muted">@review.CreatedAt.ToLocalTime().ToString("g")</small>
+                            <small class="text-muted">
+                                @review.CreatedAt.ToLocalTime().ToString("g")
+                            </small>
                         </li>
                     }
                 </ul>
 
-                <div class="pagination">
+                <div class="pagination mt-2">
                     <span class="page-btn">Prev</span>
                     <span class="page-btn">1</span>
                     <span class="page-btn">2</span>
@@ -106,28 +112,29 @@
     else
     {
         <p>You are currently a <strong>User</strong>.</p>
-        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#sellerModal">
+        <button type="button"
+                class="btn btn-outline-success"
+                data-bs-toggle="modal"
+                data-bs-target="#sellerModal">
             Apply for Seller Access
         </button>
     }
 
-    <div class="modal fade" id="sellerModal" tabindex="-1">
+    <div class="modal fade" id="sellerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="post" asp-page-handler="BecomeSeller">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Seller Upgrade</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Becoming a seller allows you to list and manage vinyl records on VinylVault.</p>
-                        <p>Are you sure you want to upgrade your account?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-success">Yes, Become a Seller</button>
-                    </div>
-                </form>
-            </div>
+            <form method="post" asp-page-handler="BecomeSeller" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Seller Upgrade</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Becoming a seller allows you to list and manage vinyl records on VinylVault.</p>
+                    <p>Are you sure you want to upgrade your account?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Yes, Become a Seller</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -135,9 +142,9 @@
 @section Scripts {
     <script>
         function toggleComment(btn) {
-            const li = btn.closest('li');
+            const li    = btn.closest('li');
+            const full  = li.querySelector('.full');
             const short = li.querySelector('.short');
-            const full = li.querySelector('.full');
             if (full.classList.contains('d-none')) {
                 full.classList.remove('d-none');
                 short.style.display = 'none';

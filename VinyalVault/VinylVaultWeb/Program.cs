@@ -1,15 +1,18 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using CoreLayer.Services;
 using DataLayer;
 using Common.Repositories;
 using CoreLayer;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -20,6 +23,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
     });
+
 builder.Services.AddAuthorization();
 builder.Services.AddSession();
 builder.Services.AddRazorPages();
@@ -34,7 +38,11 @@ builder.Services.AddSingleton<ICacheRepository, DbCacheMarket>();
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthenticationService, UserService>();
+builder.Services.AddScoped<IRegistrationService, UserService>();
+builder.Services.AddScoped<IUserProfileService, UserService>();
+builder.Services.AddScoped<ISellerService, UserService>();
+
 builder.Services.AddScoped<IVinylService, VinylService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IWishlistService, WishlistService>();
@@ -42,9 +50,7 @@ builder.Services.AddScoped<IRatingService, RatingService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
-builder.Services.Configure<SpotifySettings>(
-    builder.Configuration.GetSection("Spotify")
-);
+builder.Services.Configure<SpotifySettings>(builder.Configuration.GetSection("Spotify"));
 builder.Services.AddSingleton<ISpotifySettings>(sp =>
     sp.GetRequiredService<IOptions<SpotifySettings>>().Value
 );

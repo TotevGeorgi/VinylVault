@@ -1,50 +1,43 @@
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
-using CoreLayer;
+using Common;
 using Common.DTOs;
 using CoreLayer.Services;
-using Common;
+using CoreLayer;
+using Microsoft.Extensions.Logging;
 
 namespace VinylVaultWeb.Pages
 {
     public class SignUpModel : PageModel
     {
-        private readonly IUserService _userService;
+        private readonly IRegistrationService _registrationService;
         private readonly IPasswordHasher _passwordHasher;
 
         [BindProperty]
-        public RegisterDTO Input { get; set; }
+        public RegisterDTO Input { get; set; } = new();
 
         public string? ErrorMessage { get; set; }
         public string? EmailError { get; set; }
 
-        public SignUpModel(IUserService userService, IPasswordHasher passwordHasher)
+        public SignUpModel(
+            IRegistrationService registrationService,
+            IPasswordHasher passwordHasher)
         {
-            _userService = userService;
+            _registrationService = registrationService;
             _passwordHasher = passwordHasher;
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
-
             if (!ModelState.IsValid)
             {
-                Console.WriteLine("[DEBUG] SignUp: Invalid model state");
-                foreach (var key in ModelState.Keys)
-                {
-                    var state = ModelState[key];
-                    foreach (var error in state.Errors)
-                    {
-                        Console.WriteLine($"[ERROR] Field '{key}' - {error.ErrorMessage}");
-                    }
-                }
                 return Page();
             }
 
-            if (await _userService.EmailExists(Input.Email))
+            if (await _registrationService.EmailExists(Input.Email))
             {
                 EmailError = "This email is already registered.";
                 return Page();
@@ -60,14 +53,12 @@ namespace VinylVaultWeb.Pages
                 Role = "User"
             };
 
-            Guid? insertedUserId = await _userService.RegisterUser(newUser);
-
+            Guid? insertedUserId = await _registrationService.RegisterUser(newUser);
             if (insertedUserId == null)
             {
                 ErrorMessage = "Failed to create account.";
                 return Page();
             }
-
 
             var claims = new List<Claim>
             {
@@ -81,11 +72,12 @@ namespace VinylVaultWeb.Pages
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                principal
+            );
 
             return RedirectToPage("/Index");
         }
-
     }
 }

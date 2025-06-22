@@ -1,25 +1,25 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
+using AuthSvc = CoreLayer.Services.IAuthenticationService;
 using Common.DTOs;
-using CoreLayer.Services;
 
 namespace VinylVaultWeb.Pages
 {
     public class LogInModel : PageModel
     {
-        private readonly IUserService _userService;
+        private readonly AuthSvc _authenticationService;
 
         [BindProperty]
         public LoginDTO Input { get; set; } = new();
 
         public string? ErrorMessage { get; set; }
 
-        public LogInModel(IUserService userService)
+        public LogInModel(AuthSvc authenticationService)
         {
-            _userService = userService;
+            _authenticationService = authenticationService;
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -27,8 +27,7 @@ namespace VinylVaultWeb.Pages
             if (!ModelState.IsValid)
                 return Page();
 
-            var user = await _userService.AuthenticateUser(Input.Email, Input.Password);
-
+            var user = await _authenticationService.AuthenticateUser(Input.Email, Input.Password);
 
             if (user == null || user.UserId == Guid.Empty)
             {
@@ -47,13 +46,13 @@ namespace VinylVaultWeb.Pages
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
+            var authProps = new AuthenticationProperties { IsPersistent = Input.RememberMe };
 
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = Input.RememberMe
-            };
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                principal,
+                authProps
+            );
 
             return RedirectToPage("/Index");
         }

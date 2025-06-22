@@ -1,48 +1,51 @@
+using System.IO;
+using System.Threading.Tasks;
+using Common;
+using CoreLayer;
+using CoreLayer.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using CoreLayer.Services;
-using Common;
-using Microsoft.AspNetCore.Authorization;
-using System.IO;
-using System.Threading.Tasks;
-using CoreLayer;
 
 namespace VinylVaultWeb.Pages
 {
     [Authorize(Roles = "Seller")]
     public class SellVinylModel : PageModel
     {
-        private readonly IUserService _userService;
         private readonly IVinylService _vinylService;
+        private readonly IAuthenticationService _authService;
 
-        [BindProperty(SupportsGet = true)] 
+        [BindProperty(SupportsGet = true)]
         public string AlbumId { get; set; }
 
-        [BindProperty] 
+        [BindProperty]
         public string VinylTitle { get; set; }
 
         [BindProperty]
         public string VinylArtist { get; set; }
 
-        [BindProperty] 
+        [BindProperty]
         public string Condition { get; set; }
 
-        [BindProperty] 
+        [BindProperty]
         public string Description { get; set; }
 
-        [BindProperty] 
+        [BindProperty]
         public IFormFile TrackImage { get; set; }
 
-        [BindProperty] 
+        [BindProperty]
         public decimal Price { get; set; }
 
         public string? SuccessMessage { get; set; }
 
-        public SellVinylModel(IUserService userService, IVinylService vinylService)
+        public SellVinylModel(
+            IVinylService vinylService,
+            IAuthenticationService authService)
         {
-            _userService = userService;
             _vinylService = vinylService;
+            _authService = authService;
         }
 
         public IActionResult OnGet(string albumId, string title, string artist)
@@ -50,7 +53,9 @@ namespace VinylVaultWeb.Pages
             if (string.IsNullOrEmpty(albumId)
              || string.IsNullOrEmpty(title)
              || string.IsNullOrEmpty(artist))
+            {
                 return RedirectToPage("/Marketplace");
+            }
 
             AlbumId = albumId;
             VinylTitle = title;
@@ -77,15 +82,22 @@ namespace VinylVaultWeb.Pages
                 return Page();
             }
 
-            var email = HttpContext.User.Identity?.Name!;
-            var user = await _userService.GetUserByEmail(email);
+            var email = User.Identity?.Name;
+            if (string.IsNullOrEmpty(email))
+                return RedirectToPage("/LogIn");
+
+            var user = await _authService.GetUserByEmail(email);
             if (user == null || user.Role != "Seller")
                 return RedirectToPage("/LogIn");
 
-            var vinylsDirectory = Path.Combine(Directory.GetCurrentDirectory(),
-                                               "wwwroot/images/vinyls");
+            var vinylsDirectory = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot/images/vinyls"
+            );
             Directory.CreateDirectory(vinylsDirectory);
-            var imagePath = Path.Combine(vinylsDirectory, TrackImage.FileName);
+
+            var fileName = Path.GetFileName(TrackImage.FileName);
+            var imagePath = Path.Combine(vinylsDirectory, fileName);
             using var fs = new FileStream(imagePath, FileMode.Create);
             await TrackImage.CopyToAsync(fs);
 
@@ -96,17 +108,20 @@ namespace VinylVaultWeb.Pages
                 Artist = VinylArtist,
                 Condition = Condition,
                 Description = Description,
-                ImagePath = $"/images/vinyls/{TrackImage.FileName}",
+                ImagePath = $"/images/vinyls/{fileName}",
                 SellerEmail = user.Email,
                 Status = "Available",
-                Price = Price            
+                Price = Price
             };
 
             var isSaved = await _vinylService.UploadVinyl(newVinyl);
             if (isSaved)
-                return RedirectToPage(new { albumId = AlbumId, title = VinylTitle, artist = VinylArtist });
+            {
+                SuccessMessage = "Your vinyl has been listed!";
+                return Page();
+            }
 
-            ModelState.AddModelError(string.Empty, "Failed to list vinyl.");
+            ModelState.AddModelError(string.Empty, "Failed to list your vinyl. Please try again.");
             return Page();
         }
     }

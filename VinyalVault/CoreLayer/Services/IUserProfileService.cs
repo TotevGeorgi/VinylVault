@@ -8,7 +8,7 @@ namespace CoreLayer.Services
 {
     public interface IUserProfileService
     {
-        bool UpdateUserProfile(string email, string fullName, string address);
-        Task<bool> DeleteUser(string email);
+        Task<bool> UpdateUserProfileAsync(string email, string fullName, string address);
+        Task<bool> DeleteUserAsync(string email);
     }
 }

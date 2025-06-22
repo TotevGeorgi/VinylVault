@@ -9,6 +9,6 @@ namespace CoreLayer.Services
 {
     public interface IRecommendationService
     {
-        Task<List<SpotifyAlbumPreview>> GetRecommendationsAsync(string userEmail);
+        Task<List<SpotifyAlbumPreview>> GetRecommendationsAsync(string userId);
     }
 }

@@ -13,7 +13,6 @@ namespace VinylVaultWeb.Pages
     {
         private readonly IVinylService _vinylService;
         private readonly IOrderService _orderService;
-        private readonly IUserService _userService;
         private readonly IRatingService _ratingService;
 
         public List<Vinyl> Sellers { get; set; } = new();
@@ -44,12 +43,10 @@ namespace VinylVaultWeb.Pages
         public BuyVinylModel(
             IVinylService vinylService,
             IOrderService orderService,
-            IUserService userService,
             IRatingService ratingService)
         {
             _vinylService = vinylService;
             _orderService = orderService;
-            _userService = userService;
             _ratingService = ratingService;
         }
 

@@ -1,5 +1,6 @@
 ﻿using Common.DTOs;
 using Common.Repositories;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,49 +13,75 @@ namespace CoreLayer.Services
         private readonly IWishlistRepository _wishlistRepo;
         private readonly IOrderRepository _orderRepo;
         private readonly ISpotifyAlbumService _spotify;
+        private readonly ILogger<RecommendationService> _logger;
 
-        public RecommendationService(IWishlistRepository wishlistRepo, IOrderRepository orderRepo, ISpotifyAlbumService spotify)
+        public RecommendationService(
+            IWishlistRepository wishlistRepo,
+            IOrderRepository orderRepo,
+            ISpotifyAlbumService spotify,
+            ILogger<RecommendationService> logger)
         {
             _wishlistRepo = wishlistRepo;
             _orderRepo = orderRepo;
             _spotify = spotify;
+            _logger = logger;
         }
 
         public async Task<List<SpotifyAlbumPreview>> GetRecommendationsAsync(string userId)
         {
-            var wishlistAlbumIds = await _wishlistRepo.GetAlbumIdsInWishlist(userId);
+            var wishlistIds = await _wishlistRepo.GetAlbumIdsInWishlist(userId);
             var orders = await _orderRepo.GetOrdersByUser(userId);
+            var ownedIds = new HashSet<string>(
+                wishlistIds.Concat(orders.Select(o => o.VinylId.ToString()))
+            );
 
-            var wishlistAlbums = await _spotify.GetAlbumsByIdsAsync(wishlistAlbumIds);
-            var wishlistGenres = wishlistAlbums
+            var wishlistAlbums = await _spotify.GetAlbumsByIdsAsync(wishlistIds);
+            var allGenres = wishlistAlbums
                 .Where(a => a.Genres != null)
                 .SelectMany(a => a.Genres!)
                 .ToList();
 
-            var orderedArtists = orders
-                .Select(o => o.Artist)
-                .Where(a => !string.IsNullOrEmpty(a))
-                .Distinct()
-                .ToList();
-
-            var genreCounts = wishlistGenres
+            var topGenres = allGenres
                 .GroupBy(g => g)
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.Key)
                 .Take(3)
                 .ToList();
 
-            var artistCounts = orderedArtists
-                .GroupBy(a => a)
+            var topArtists = orders
+                .Select(o => o.Artist)
+                .Where(a => !string.IsNullOrEmpty(a))
+                .GroupBy(a => a!)
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.Key)
                 .Take(3)
                 .ToList();
 
-            var recommendations = await _spotify.GetRecommendationsByGenresAndArtistsAsync(genreCounts, artistCounts);
+            List<SpotifyAlbumPreview> recs;
+            if (topGenres.Any() || topArtists.Any())
+            {
+                try
+                {
+                    recs = await _spotify
+                        .GetRecommendationsByGenresAndArtistsAsync(topGenres, topArtists);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                      "Spotify recs failed; falling back to New Releases");
+                    recs = await _spotify.GetNewReleasesAsync(10);
+                }
+            }
+            else
+            {
+                _logger.LogInformation(
+                  "No user seeds available, falling back to New Releases");
+                recs = await _spotify.GetNewReleasesAsync(10);
+            }
 
-            var knownIds = new HashSet<string>(wishlistAlbumIds.Concat(orders.Select(o => o.VinylId.ToString())));
-            return recommendations.Where(r => !knownIds.Contains(r.Id)).ToList();
+            return recs
+                .Where(r => !ownedIds.Contains(r.Id))
+                .ToList();
         }
     }
 }
